@@ -36,6 +36,7 @@ jobs:
     with:
       registry: registry.gitlab.com
       context: production
+      environment: production
       domain: iconicompany.ru
 ```
 
@@ -55,6 +56,7 @@ jobs:
     with:
       registry: registry.gitlab.com
       context: testing
+      environment: ${{ github.head_ref || github.ref_name }}
       domain: ${{ github.head_ref || github.ref_name }}.${{ github.repository_owner }}.icncd.ru
 ```
 
@@ -74,6 +76,7 @@ jobs:
     with:
       registry: registry.gitlab.com
       context: testing
+      environment: ${{ github.head_ref || github.ref_name }}
       domain: ${{ github.head_ref || github.ref_name }}.${{ github.repository_owner }}.icncd.ru
 
 ```

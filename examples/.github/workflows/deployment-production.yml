@@ -11,4 +11,5 @@ jobs:
     with:
       registry: registry.gitlab.com
       context: production
+      environment: production
       domain: iconicompany.ru

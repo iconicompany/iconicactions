@@ -6,7 +6,10 @@ on:
           description: Container registry, e.g. registry.gitlab.com.
           type: string
         context:
-          description: Deployment environment (production, staging, testing, etc)
+          description: Deployment kubernetes context (production, staging, testing, etc)
+          type: string
+        environment:
+          description: Deployment environment (production, branch name, pull request number, etc)
           type: string
         domain:
           description: Hosting domain, e.g. example.com
@@ -36,7 +39,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ inputs.registry }}
-          username: ${{ secrets.REGISTRY_USERNAME || '~~NULL~~' }}
+          username: ${{ secrets.REGISTRY_USERNAME || '~~TOKENAUTH~~' }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Install werf
@@ -48,7 +51,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           echo "WERF_KUBE_CONTEXT=${{ inputs.context }}" >> $GITHUB_ENV
-          echo "WERF_ENV=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
+          echo "WERF_ENV=${{ inputs.environment }}" >> $GITHUB_ENV
           echo "WERF_SET_DOMAIN=env.DOMAIN=${{ inputs.domain }}" >> $GITHUB_ENV
           echo "WERF_REPO=${{ inputs.registry }}/${{ github.repository }}" >> $GITHUB_ENV
           echo "WERF_SECRET_KEY=${{ secrets.WERF_SECRET_KEY }}" >> $GITHUB_ENV
