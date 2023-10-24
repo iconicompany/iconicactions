@@ -64,9 +64,7 @@ Deploy pull request labelled 'Review'
 
 ```
 name: Pull Request Deployment
-on:
-  pull_request:
-    types: [labeled, unlabeled, synchronize, closed, reopened]
+on: pull_request
 
 jobs:
 

@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Values.werf.name }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - secretName: {{ $.Values.env.DOMAIN }}
+      hosts:
+        - {{ $.Values.env.DOMAIN }}
+  rules:
+  - host: {{ $.Values.env.DOMAIN }}
+    http:
+      paths:
+      - path: /{{ $.Values.werf.name }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $.Values.werf.name }}
+            port:
+              number: 3000

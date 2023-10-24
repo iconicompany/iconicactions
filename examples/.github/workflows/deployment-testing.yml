@@ -1,0 +1,14 @@
+name: Testing Deployment
+on:
+  push:
+    branches: ['main','sandbox']
+
+jobs:
+
+  call-converge:
+    uses: iconicompany/werfactions/.github/workflows/deployment.yml@main
+    secrets: inherit
+    with:
+      registry: registry.gitlab.com
+      context: testing
+      domain: ${{ github.head_ref || github.ref_name }}.${{ github.repository_owner }}.icncd.ru
