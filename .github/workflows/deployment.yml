@@ -51,7 +51,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           echo "WERF_KUBE_CONTEXT=${{ inputs.context }}" >> $GITHUB_ENV
-          echo "WERF_ENV=${{ inputs.environment }}" >> $GITHUB_ENV
+          echo "WERF_ENV=${{ inputs.environment || github.head_ref || github.ref_name }}" >> $GITHUB_ENV
           echo "WERF_SET_DOMAIN=env.DOMAIN=${{ inputs.domain }}" >> $GITHUB_ENV
           echo "WERF_REPO=${{ inputs.registry }}/${{ github.repository }}" >> $GITHUB_ENV
           echo "WERF_SECRET_KEY=${{ secrets.WERF_SECRET_KEY }}" >> $GITHUB_ENV
