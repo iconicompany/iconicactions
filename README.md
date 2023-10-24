@@ -31,7 +31,7 @@ on:
 jobs:
 
   call-converge:
-    uses: iconicompany/werfactions/.github/workflows/deployment.yml
+    uses: iconicompany/werfactions/.github/workflows/deployment.yml@main
     secrets: inherit
     with:
       registry: registry.gitlab.com
@@ -50,7 +50,7 @@ on:
 jobs:
 
   call-converge:
-    uses: iconicompany/werfactions/.github/workflows/deployment.yml
+    uses: iconicompany/werfactions/.github/workflows/deployment.yml@main
     secrets: inherit
     with:
       registry: registry.gitlab.com
@@ -71,7 +71,7 @@ on:
 jobs:
 
   call-converge:
-    uses: iconicompany/werfactions/.github/workflows/deployment.yml
+    uses: iconicompany/werfactions/.github/workflows/deployment.yml@main
     secrets: inherit
     with:
       registry: registry.gitlab.com
