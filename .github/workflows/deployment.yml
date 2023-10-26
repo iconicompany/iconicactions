@@ -9,11 +9,15 @@ on:
           description: Deployment kubernetes context (production, staging, testing, etc)
           type: string
         environment:
-          description: Deployment environment (production, branch name, pull request number, etc)
+          description: Deployment environment (production, branch name, pull request number, etc). Default value is branch/tag name "github.head_ref || github.ref_name"
           type: string
         domain:
           description: Hosting domain, e.g. example.com
           type: string
+        label:
+          description: Pull request label to converge (review by default)
+          type: string
+          default: review
       secrets:
         REGISTRY_USERNAME:
         REGISTRY_PASSWORD:
@@ -23,6 +27,14 @@ on:
 concurrency:
   group: ${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
+
+env:
+  WERF_ENV: ${{ inputs.environment || github.head_ref || github.ref_name }} 
+  WERF_KUBE_CONTEXT: ${{ inputs.context }}
+  WERF_SET_DOMAIN: env.DOMAIN=${{ inputs.domain }}
+  WERF_REPO: ${{ inputs.registry }}/${{ github.repository }}
+  WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
+  IS_LABELED_PR: ${{ github.event_name == 'pull_request' && contains( github.event.pull_request.labels.*.name, inputs.label ) }}
 
 jobs:
 
@@ -39,29 +51,19 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ inputs.registry }}
-          username: ${{ secrets.REGISTRY_USERNAME || '~~TOKENAUTH~~' }}
+          username: ${{ secrets.REGISTRY_USERNAME || 'NULL' }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Install werf
-        uses: werf/actions/install@v1.2
-
-      - name: Define environment vars
-        run: |
-          echo "WERF_KUBECONFIG_BASE64<<EOF" >> $GITHUB_ENV
-          echo "${{ secrets.KUBE_CONFIG }}" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          echo "WERF_KUBE_CONTEXT=${{ inputs.context }}" >> $GITHUB_ENV
-          echo "WERF_ENV=${{ inputs.environment || github.head_ref || github.ref_name }}" >> $GITHUB_ENV
-          echo "WERF_SET_DOMAIN=env.DOMAIN=${{ inputs.domain }}" >> $GITHUB_ENV
-          echo "WERF_REPO=${{ inputs.registry }}/${{ github.repository }}" >> $GITHUB_ENV
-          echo "WERF_SECRET_KEY=${{ secrets.WERF_SECRET_KEY }}" >> $GITHUB_ENV
-
       - name: Werf converge
-        if: ${{  github.event_name == 'push' || github.event_name == 'pull_request' && github.event.action != 'closed' && contains( github.event.pull_request.labels.*.name, 'review' ) }}
-        run:
-          werf converge
+        uses: werf/actions/converge@v1.2
+        if: ${{ github.event_name == 'push' || env.IS_LABELED_PR && github.event.action != 'closed' }}
+        with:
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG }}
+          env: ${{ env.WERF_ENV }}
 
       - name: Werf dismiss
-        if: ${{ github.event_name == 'pull_request' && (github.event.action == 'closed' || !contains( github.event.pull_request.labels.*.name, 'review' )) }}
-        run:
-          werf dismiss --with-namespace
+        uses: werf/actions/dismiss@v1.2
+        if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR) || (github.event.action == 'unlabeled' && !env.IS_LABELED_PR)) }}
+        with:
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG }}
+          env: ${{ env.WERF_ENV }}  
