@@ -1,4 +1,4 @@
-name: Werf Deployment
+name: Deployment
 on:
     workflow_call:
       inputs:
@@ -11,8 +11,8 @@ on:
         environment:
           description: Deployment environment (production, branch name, pull request number, etc). Default value is branch/tag name "github.head_ref || github.ref_name"
           type: string
-        domain:
-          description: Hosting domain, e.g. example.com
+        setenv:
+          description: Some env variable, e.g. env.DOMAIN=example.com
           type: string
         label:
           description: Pull request label to converge (review by default)
@@ -31,39 +31,35 @@ concurrency:
 env:
   WERF_ENV: ${{ inputs.environment || github.head_ref || github.ref_name }} 
   WERF_KUBE_CONTEXT: ${{ inputs.context }}
-  WERF_SET_DOMAIN: env.DOMAIN=${{ inputs.domain }}
+  WERF_SET_ENV: ${{ inputs.setenv }}
   WERF_REPO: ${{ inputs.registry }}/${{ github.repository }}
   WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
   IS_LABELED_PR: ${{ github.event_name == 'pull_request' && contains( github.event.pull_request.labels.*.name, inputs.label ) }}
 
 jobs:
-
-  converge:
-    name: Converge
+  deployment:
+    name: Deployment
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
       - name: Login to Registry
         uses: docker/login-action@v2
         with:
           registry: ${{ inputs.registry }}
           username: ${{ secrets.REGISTRY_USERNAME || 'NULL' }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
-
       - name: Werf converge
         uses: werf/actions/converge@v1.2
-        if: ${{ github.event_name == 'push' || env.IS_LABELED_PR && github.event.action != 'closed' }}
+        if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         with:
           kube-config-base64-data: ${{ secrets.KUBE_CONFIG }}
           env: ${{ env.WERF_ENV }}
-
       - name: Werf dismiss
         uses: werf/actions/dismiss@v1.2
-        if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR) || (github.event.action == 'unlabeled' && !env.IS_LABELED_PR)) }}
+        if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         with:
           kube-config-base64-data: ${{ secrets.KUBE_CONFIG }}
           env: ${{ env.WERF_ENV }}  
