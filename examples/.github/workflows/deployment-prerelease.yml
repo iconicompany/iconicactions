@@ -1,7 +1,7 @@
-name: Production Deployment
+name: Prerelease Deployment
 on:
   push:
-    tags: ['v*','!v*-*']
+    tags: ['v*-*']
 jobs:
   call-deployment:
     uses: iconicompany/werfactions/.github/workflows/deployment.yml@main
@@ -9,5 +9,5 @@ jobs:
     with:
       registry: registry.gitlab.com
       context: production
-      environment: production
-      setenv: env.DOMAIN=iconicompany.ru
+      environment: production-alpha
+      setenv: env.DOMAIN=alpha.iconicompany.ru
