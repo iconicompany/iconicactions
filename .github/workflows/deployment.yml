@@ -20,9 +20,14 @@ on:
           default: review
       secrets:
         REGISTRY_USERNAME:
+          description: Container registry login. If not set, github.actor is used
         REGISTRY_PASSWORD:
+          description: Container registry password.  If not set, secrets.GITHUB_TOKEN is used
         WERF_SECRET_KEY:
+          description: Key for secret files/values. Required if secret files/values used in templates.
         KUBE_CONFIG:
+          description: K8s config in base64
+          required: true
 
 concurrency:
   group: ${{ github.head_ref || github.ref_name }}
@@ -49,8 +54,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ inputs.registry }}
-          username: ${{ secrets.REGISTRY_USERNAME || 'NULL' }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          password: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
       - name: Werf converge
         uses: werf/actions/converge@v1.2
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}

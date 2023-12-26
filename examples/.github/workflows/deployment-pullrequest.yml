@@ -7,6 +7,7 @@ jobs:
     uses: iconicompany/werfactions/.github/workflows/deployment.yml@main
     secrets: inherit
     with:
-      registry: registry.gitlab.com/${{ github.repository }}
+      #registry: registry.gitlab.com/${{ github.repository }}
+      registry: ghcr.io/${{ github.repository }}
       context: testing
       setenv: env.DOMAIN=${{ github.head_ref || github.ref_name }}.${{ github.repository_owner }}.icncd.ru
