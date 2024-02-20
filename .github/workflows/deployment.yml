@@ -51,6 +51,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Login to Registry
+        if: inputs.registry
         uses: docker/login-action@v2
         with:
           registry: ${{ inputs.registry }}
