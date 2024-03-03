@@ -3,13 +3,14 @@ on:
     workflow_call:
       inputs:
         registry:
-          description: Container registry, e.g. registry.gitlab.com/owner/repo.
+          description: Custom container registry, e.g. registry.gitlab.com/owner/repo. Will use ghcr.io/owner/repo/repo by default
           type: string
         context:
           description: Deployment kubernetes context (production, staging, testing, etc)
           type: string
+          default: default
         env:
-          description: Werf env (production, branch name, pull request number, etc). Default value is branch/tag name "github.head_ref || github.ref_name"
+          description: Werf env (production, branch name, pull request number, author, etc). Default value is branch/tag name "github.head_ref || github.ref_name"
           type: string
         setenv:
           description: Some env variable, e.g. env.DOMAIN=example.com
@@ -27,7 +28,6 @@ on:
           description: Key for secret files/values. Required if secret files/values used in templates.
         KUBE_CONFIG:
           description: K8s config in base64
-          required: true
 
 concurrency:
   group: ${{ github.head_ref || github.ref_name }}
@@ -42,7 +42,11 @@ env:
   IS_LABELED_PR: ${{ github.event_name == 'pull_request' && contains( github.event.pull_request.labels.*.name, inputs.label ) }}
 
 jobs:
+  bootstrap:
+    name: Bootstrap
+    uses: ./.github/workflows/bootstrap.yml
   deployment:
+    needs: bootstrap
     name: Deployment
     runs-on: ubuntu-latest
     steps:
@@ -61,11 +65,11 @@ jobs:
         uses: werf/actions/converge@v1.2
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         with:
-          kube-config-base64-data: ${{ secrets.KUBE_CONFIG }}
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || needs.bootstrap.outputs.KUBE_CONFIG }}
           env: ${{ env.WERF_ENV }}
       - name: Werf dismiss
         uses: werf/actions/dismiss@v1.2
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         with:
-          kube-config-base64-data: ${{ secrets.KUBE_CONFIG }}
-          env: ${{ env.WERF_ENV }}  
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || needs.bootstrap.outputs.KUBE_CONFIG }}
+          env: ${{ env.WERF_ENV }}
