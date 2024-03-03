@@ -13,7 +13,7 @@ on:
         CA_FINGERPRINT:
           description: Root CA fingerprint
           type: string
-          default: 8cbfb715df6166dca2bf680fa0418a3ba42344be6abb0a4b5a0d7800ad835c27
+          default: a08919780dddca4f4af0a9f68952d6379d7060c30b98d396c61aaa3fd0295838
         OIDC_CLIENT_ID:
           description: OIDC Client ID, e.g. api://SmallstepCAProvisioner
           type: string
