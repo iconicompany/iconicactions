@@ -65,7 +65,7 @@ jobs:
       - name: Step CA bootstrap
         id: bootstrap
         run: |
-          curl -Ls https://github.com/iconicompany/werftest/raw/main/scripts/step-github.sh | bash -
+          curl -Ls https://github.com/iconicompany/iconicactions/raw/main/scripts/step-github.sh | bash -
         env:
           STEP_CA_URL: ${{ inputs.STEP_CA_URL }}
           STEP_FINGERPRINT: ${{ inputs. STEP_FINGERPRINT }}
