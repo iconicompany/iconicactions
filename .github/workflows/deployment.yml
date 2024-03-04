@@ -76,6 +76,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Login to Registry
+        if: inputs.registry
         uses: docker/login-action@v3
         with:
           registry: ${{ inputs.registry }}
@@ -85,7 +86,10 @@ jobs:
         uses: werf/actions/install@v1.2
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
-        run: . $(werf ci-env github --as-file); werf converge 
+        run: |
+          werf ci-env github --as-file 
+          . $(werf ci-env github --as-file)
+          werf converge 
         env:
           WERF_KUBECONFIG_BASE64: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
