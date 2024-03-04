@@ -1,0 +1,11 @@
+{
+  "name": "iconicactions",
+  "module": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "next-connect": "^1.0.0"
+  }
+}

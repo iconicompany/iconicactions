@@ -1,0 +1,11 @@
+name: Production Deployment
+on:
+  push:
+    tags: ['v*','!v*-*']
+jobs:
+  call-deployment:
+    uses: ./.github/workflows/deployment.yml
+    secrets: inherit
+    with:
+      env: production
+      setenv: env.DOMAIN=iconicompany.ru

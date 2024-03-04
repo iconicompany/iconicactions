@@ -1,0 +1,11 @@
+name: Prerelease Deployment
+on:
+  push:
+    tags: ['v*-*']
+jobs:
+  call-deployment:
+    uses: ./.github/workflows/deployment.yml
+    secrets: inherit
+    with:
+      env: prerelease
+      setenv: env.DOMAIN=prerelease.iconicompany.ru
