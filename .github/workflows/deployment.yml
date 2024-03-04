@@ -82,20 +82,32 @@ jobs:
           registry: ${{ inputs.registry }}
           username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
           password: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
-      - name: Install werf
-        uses: werf/actions/install@v1.2
       - name: Werf converge
+        uses: werf/actions/converge@v1.2
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
-        run: |
-          werf ci-env github --as-file 
-          . $(werf ci-env github --as-file)
-          werf converge 
-        env:
-          WERF_KUBECONFIG_BASE64: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
-          WERF_ENV: ${{ env.WERF_ENV }}
+        with:
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+          env: ${{ env.WERF_ENV }}
       - name: Werf dismiss
+        uses: werf/actions/dismiss@v1.2
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
-        run: . $(werf ci-env github --as-file); werf dismiss --with-namespace
-        env:
-          WERF_KUBECONFIG_BASE64: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
-          WERF_ENV: ${{ env.WERF_ENV }}
+        with:
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+          env: ${{ env.WERF_ENV }}
+#      - name: Install werf
+#        uses: werf/actions/install@v1.2
+#      - name: Werf converge
+#        if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
+#        run: |
+#          werf ci-env github --as-file 
+#          . $(werf ci-env github --as-file)
+#          werf converge 
+#        env:
+#          WERF_KUBECONFIG_BASE64: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+#          WERF_ENV: ${{ env.WERF_ENV }}
+#      - name: Werf dismiss
+#        if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
+#        run: . $(werf ci-env github --as-file); werf dismiss --with-namespace
+#        env:
+#          WERF_KUBECONFIG_BASE64: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+#          WERF_ENV: ${{ env.WERF_ENV }}
