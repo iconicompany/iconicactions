@@ -6,7 +6,7 @@ on:
           description: Custom container registry, e.g. registry.gitlab.com/owner/repo. Will use ghcr.io/owner/repo/repo by default
           type: string
         context:
-          description: Deployment kubernetes context (production, staging, testing, etc)
+          description: KUBECONFIG context name (production, staging, testing, etc)
           type: string
           default: default
         env:
@@ -19,6 +19,18 @@ on:
           description: Pull request label to converge (review by default)
           type: string
           default: review
+        CLUSTER_URL:
+          description: Cluser URL, default https://kube01.icncd.ru:6443
+          type: string
+          default: https://kube01.icncd.ru:6443
+        STEP_CA_URL:
+          description: Step CA URL, default https://ca.iconicompany.com:4443
+          type: string
+          default: https://ca.iconicompany.com:4443
+        STEP_FINGERPRINT:
+          description: Root CA fingerprint
+          type: string
+          default: a08919780dddca4f4af0a9f68952d6379d7060c30b98d396c61aaa3fd0295838
       secrets:
         REGISTRY_USERNAME:
           description: Container registry login. If not set, github.actor is used
@@ -41,15 +53,24 @@ env:
   WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
   IS_LABELED_PR: ${{ github.event_name == 'pull_request' && contains( github.event.pull_request.labels.*.name, inputs.label ) }}
 
+permissions:
+    id-token: write # This is required for requesting the JWT
+    contents: read  # This is required for actions/checkout
+    packages: write # This is required for package publish
 jobs:
-  bootstrap:
-    name: Bootstrap
-    uses: ./.github/workflows/bootstrap.yml
   deployment:
-    needs: bootstrap
     name: Deployment
     runs-on: ubuntu-latest
     steps:
+      - name: Step CA bootstrap
+        id: bootstrap
+        run: |
+          curl -Ls https://github.com/iconicompany/werftest/raw/main/scripts/step-github.sh | bash -
+        env:
+          STEP_CA_URL: ${{ inputs.STEP_CA_URL }}
+          STEP_FINGERPRINT: ${{ inputs. STEP_FINGERPRINT }}
+          CLUSTER_URL: ${{ inputs.CLUSTER_URL }}
+          CONTEXT: ${{ inputs.CONTEXT }}
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -65,11 +86,11 @@ jobs:
         uses: werf/actions/converge@v1.2
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         with:
-          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || needs.bootstrap.outputs.KUBE_CONFIG }}
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           env: ${{ env.WERF_ENV }}
       - name: Werf dismiss
         uses: werf/actions/dismiss@v1.2
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         with:
-          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || needs.bootstrap.outputs.KUBE_CONFIG }}
+          kube-config-base64-data: ${{ secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           env: ${{ env.WERF_ENV }}
