@@ -35,7 +35,7 @@ contexts:
     cluster: default
     user: default
   name: default
-current-context: kube01-default
+current-context: default
 kind: Config
 preferences: {}
 users:
