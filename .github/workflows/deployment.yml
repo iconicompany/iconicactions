@@ -5,10 +5,6 @@ on:
         registry:
           description: Custom container registry, e.g. registry.gitlab.com/owner/repo. Will use ghcr.io/owner/repo/repo by default
           type: string
-        context:
-          description: KUBE_CONFIG context name (production, staging, testing, etc). Deprecated, use KUBE_CONTEXT
-          type: string
-          default: default
         env:
           description: Werf env (production, branch name, pull request number, author, etc). Default value is branch/tag name "github.head_ref || github.ref_name"
           type: string
@@ -31,16 +27,14 @@ on:
           description: Root CA fingerprint
           type: string
           default: a08919780dddca4f4af0a9f68952d6379d7060c30b98d396c61aaa3fd0295838
-        KUBE_CONFIG:
-          description: K8s config in base64
-          type: string
         KUBE_CONTEXT:
-          description: KUBE_CONFIG context name (production, staging, testing, etc)
+          description: KUBE_CONFIG context name (production, staging, testing, etc). Will use secrets.KUBE_CONFIG if passed
           type: string
-          default: default
       secrets:
         REGISTRY_USERNAME:
           description: Container registry login. If not set, github.actor is used
+        KUBE_CONFIG:
+          description: K8s config in base64. Used if KUBE_CONTEXT is passed as input
         REGISTRY_PASSWORD:
           description: Container registry password.  If not set, secrets.GITHUB_TOKEN is used
         WERF_SECRET_KEY:
@@ -52,7 +46,7 @@ concurrency:
 
 env:
   WERF_ENV: ${{ inputs.env || github.head_ref || github.ref_name }} 
-  WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT || inputs.CONTEXT }}
+  WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
   WERF_SET_ENV: ${{ inputs.setenv }}
   WERF_REPO: ${{ inputs.registry }}
   WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
@@ -69,14 +63,13 @@ jobs:
     steps:
       - name: Step CA bootstrap
         id: bootstrap
-        if: ${{ ! inputs.KUBE_CONFIG }}
+        if: ${{ ! inputs.KUBE_CONTEXT }}
         run: |
           curl -Ls https://github.com/iconicompany/iconicactions/raw/main/scripts/step-github.sh | bash -
         env:
           STEP_CA_URL: ${{ inputs.STEP_CA_URL }}
           STEP_FINGERPRINT: ${{ inputs. STEP_FINGERPRINT }}
           CLUSTER_URL: ${{ inputs.CLUSTER_URL }}
-          CONTEXT: ${{ inputs.KUBE_CONTEXT || inputs.CONTEXT }}
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -92,13 +85,13 @@ jobs:
         uses: werf/actions/converge@v1.2
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         with:
-          kube-config-base64-data: ${{ inputs.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+          kube-config-base64-data: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           env: ${{ env.WERF_ENV }}
       - name: Werf dismiss
         uses: werf/actions/dismiss@v1.2
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         with:
-          kube-config-base64-data: ${{ inputs.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+          kube-config-base64-data: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           env: ${{ env.WERF_ENV }}
 #      - name: Install werf
 #        uses: werf/actions/install@v1.2
@@ -109,11 +102,11 @@ jobs:
 #          . $(werf ci-env github --as-file)
 #          werf converge 
 #        env:
-#          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+#          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
 #          WERF_ENV: ${{ env.WERF_ENV }}
 #      - name: Werf dismiss
 #        if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
 #        run: . $(werf ci-env github --as-file); werf dismiss --with-namespace
 #        env:
-#          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+#          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
 #          WERF_ENV: ${{ env.WERF_ENV }}
