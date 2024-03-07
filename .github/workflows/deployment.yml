@@ -69,7 +69,7 @@ jobs:
     steps:
       - name: Step CA bootstrap
         id: bootstrap
-        if: ! inputs.KUBE_CONFIG
+        if: ${{ ! inputs.KUBE_CONFIG }}
         run: |
           curl -Ls https://github.com/iconicompany/iconicactions/raw/main/scripts/step-github.sh | bash -
         env:
