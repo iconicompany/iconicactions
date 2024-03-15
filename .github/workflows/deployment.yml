@@ -30,6 +30,9 @@ on:
         KUBE_CONTEXT:
           description: KUBE_CONFIG context name (production, staging, testing, etc). Will use secrets.KUBE_CONFIG if passed
           type: string
+        POSTGRES_IMAGE:
+          description: Postgresql image to run in job, e.g. postgres 
+          type: string
       secrets:
         REGISTRY_USERNAME:
           description: Container registry login. If not set, github.actor is used
@@ -60,6 +63,25 @@ jobs:
   deployment:
     name: Deployment
     runs-on: ubuntu-latest
+    container: node:latest
+
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: ${{ inputs.POSTGRES_IMAGE }}
+        # Provide the password for postgres
+        env:
+          POSTGRES_DB: ${{ github.event.repository.name }}
+          POSTGRES_USER: ${{ github.event.repository.name }}
+          POSTGRES_PASSWORD: ${{ github.event.repository.name }}
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Step CA bootstrap
         id: bootstrap
