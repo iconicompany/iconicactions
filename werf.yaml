@@ -4,5 +4,6 @@ configVersion: 1
 ---
 image: app
 dockerfile: Dockerfile
+args: { DATABASE_URL: "postgres://postgresql01.kube01.icncd.ru/imarketplace?sslmode=require&sslrootcert=/root/.step/certs/root_ca.crt&sslcert=/root/.step/certs/my.crt&sslkey=/root/.step/certs/my.key" }
 contextAddFiles:
 - .step/

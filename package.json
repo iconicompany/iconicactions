@@ -6,6 +6,7 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "next-connect": "^1.0.0"
+    "next-connect": "^1.0.0",
+    "pg": "^8.11.3"
   }
 }
