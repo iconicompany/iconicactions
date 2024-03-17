@@ -12,6 +12,7 @@ const config = {
   //   cert: fs.readFileSync('/path/to/client-certificates/postgresql.crt').toString(),
   // },
 };
+console.log(config);  
 
 async function postgres_now() {
   const client = new Client(config);
