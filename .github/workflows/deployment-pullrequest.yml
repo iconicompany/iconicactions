@@ -7,4 +7,5 @@ jobs:
     uses: ./.github/workflows/deployment.yml
     secrets: inherit
     with:
+      DOCKER_BUILDKIT: true
       setenv: env.DOMAIN=${{ github.head_ref || github.ref_name }}.${{ github.repository_owner }}.icncd.ru

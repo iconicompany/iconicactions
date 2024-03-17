@@ -1,7 +1,3 @@
-import http from "http";
-import { createRouter } from "next-connect";
-
-const port = process.env.HTTP_PORT || 3000;
 import pkg from "pg";
 const { Client, Pool } = pkg;
 
@@ -16,6 +12,7 @@ const config = {
   //   cert: fs.readFileSync('/path/to/client-certificates/postgresql.crt').toString(),
   // },
 };
+console.log(config);  
 
 async function postgres_now() {
   const client = new Client(config);
@@ -25,11 +22,6 @@ async function postgres_now() {
   return res.rows[0];
 }
 
-const handler = createRouter()
-  .get("/iconicactions", async (req, res) => {
-    const now = await(postgres_now());
-    res.end(JSON.stringify(now));
-  })
-  .handler();
+const res = await(postgres_now());
+console.log(res);
 
-http.createServer(handler).listen(port);
