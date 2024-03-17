@@ -9,6 +9,8 @@ spec:
       app: {{ $.Values.werf.name }}
   template:
     metadata:
+      annotations:
+        autocert.step.sm/name: {{ $.Values.werf.name }}
       labels:
         app: {{ $.Values.werf.name }}
     spec:
