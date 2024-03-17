@@ -1,61 +1,65 @@
 name: Deployment
 on:
-    workflow_call:
-      inputs:
-        registry:
-          description: Custom container registry, e.g. registry.gitlab.com/owner/repo. Will use ghcr.io/owner/repo/repo by default
-          type: string
-        env:
-          description: Werf env (production, branch name, pull request number, author, etc). Default value is branch/tag name "github.head_ref || github.ref_name"
-          type: string
-        setenv:
-          description: Some env variable, e.g. env.DOMAIN=example.com
-          type: string
-        label:
-          description: Pull request label to converge (review by default)
-          type: string
-          default: review
-        CLUSTER_URL:
-          description: Cluser URL, default https://kube01.icncd.ru:6443
-          type: string
-          default: https://kube01.icncd.ru:6443
-        STEP_CA_URL:
-          description: Step CA URL, default https://ca.iconicompany.com:4443
-          type: string
-          default: https://ca.iconicompany.com:4443
-        STEP_FINGERPRINT:
-          description: Root CA fingerprint
-          type: string
-          default: a08919780dddca4f4af0a9f68952d6379d7060c30b98d396c61aaa3fd0295838
-        KUBE_CONTEXT:
-          description: KUBE_CONFIG context name (production, staging, testing, etc). Will use secrets.KUBE_CONFIG if passed
-          type: string
-      secrets:
-        REGISTRY_USERNAME:
-          description: Container registry login. If not set, github.actor is used
-        KUBE_CONFIG:
-          description: K8s config in base64. Used if KUBE_CONTEXT is passed as input
-        REGISTRY_PASSWORD:
-          description: Container registry password.  If not set, secrets.GITHUB_TOKEN is used
-        WERF_SECRET_KEY:
-          description: Key for secret files/values. Required if secret files/values used in templates.
+  workflow_call:
+    inputs:
+      registry:
+        description: Custom container registry, e.g. registry.gitlab.com/owner/repo. Will use ghcr.io/owner/repo/repo by default
+        type: string
+      env:
+        description: Werf env (production, branch name, pull request number, author, etc). Default value is branch/tag name "github.head_ref || github.ref_name"
+        type: string
+      setenv:
+        description: Some env variable, e.g. env.DOMAIN=example.com
+        type: string
+      label:
+        description: Pull request label to converge (review by default)
+        type: string
+        default: review
+      CLUSTER_URL:
+        description: Cluser URL, default https://kube01.icncd.ru:6443
+        type: string
+        default: https://kube01.icncd.ru:6443
+      STEP_CA_URL:
+        description: Step CA URL, default https://ca.iconicompany.com:4443
+        type: string
+        default: https://ca.iconicompany.com:4443
+      STEP_FINGERPRINT:
+        description: Root CA fingerprint
+        type: string
+        default: a08919780dddca4f4af0a9f68952d6379d7060c30b98d396c61aaa3fd0295838
+      KUBE_CONTEXT:
+        description: KUBE_CONFIG context name (production, staging, testing, etc). Will use secrets.KUBE_CONFIG if passed
+        type: string
+      DOCKER_BUILDKIT:
+        description: Flag to enable DOCKER_BUILDKIT
+        type: boolean
+    secrets:
+      REGISTRY_USERNAME:
+        description: Container registry login. If not set, github.actor is used
+      KUBE_CONFIG:
+        description: K8s config in base64. Used if KUBE_CONTEXT is passed as input
+      REGISTRY_PASSWORD:
+        description: Container registry password.  If not set, secrets.GITHUB_TOKEN is used
+      WERF_SECRET_KEY:
+        description: Key for secret files/values. Required if secret files/values used in templates.
 
 concurrency:
   group: ${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 env:
-  WERF_ENV: ${{ inputs.env || github.head_ref || github.ref_name }} 
+  WERF_ENV: ${{ inputs.env || github.head_ref || github.ref_name }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
   WERF_SET_ENV: ${{ inputs.setenv }}
   WERF_REPO: ${{ inputs.registry }}
   WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
+  DOCKER_BUILDKIT: ${{inputs.DOCKER_BUILDKIT}}
   IS_LABELED_PR: ${{ github.event_name == 'pull_request' && contains( github.event.pull_request.labels.*.name, inputs.label ) }}
 
 permissions:
-    id-token: write # This is required for requesting the JWT
-    contents: read  # This is required for actions/checkout
-    packages: write # This is required for package publish
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+  packages: write # This is required for package publish
 jobs:
   deployment:
     name: Deployment
@@ -98,9 +102,9 @@ jobs:
 #      - name: Werf converge
 #        if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
 #        run: |
-#          werf ci-env github --as-file 
+#          werf ci-env github --as-file
 #          . $(werf ci-env github --as-file)
-#          werf converge 
+#          werf converge
 #        env:
 #          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
 #          WERF_ENV: ${{ env.WERF_ENV }}
