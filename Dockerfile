@@ -7,8 +7,8 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 #COPY package*.json ./
 #RUN npm install
 COPY package.json bun.lockb ./
-RUN --mount=type=bind,source=.step,target=/root/.step ls -l /root/.step
-#RUN ls -l /root/.step
+RUN bun install
+RUN --mount=type=bind,source=.step,target=/root/.step bun console.js
 
 COPY *.js ./
 
