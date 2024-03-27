@@ -11,7 +11,8 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 COPY package.json bun.lockb ./
 RUN bun install
 
-COPY *.js ./
+#COPY *.js ./
+COPY . .
 ENV DATABASE_URL=${DATABASE_URL}
 RUN --mount=type=bind,source=.step,target=/root/.step env DATABASE_URL=${DATABASE_URL} bun console.js
 
