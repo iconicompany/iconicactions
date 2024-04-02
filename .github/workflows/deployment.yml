@@ -51,8 +51,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  WERF_ENV: ${{ inputs.WERF_ENV }}
-  WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE }}
+  WERF_ENV: ${{ inputs.WERF_ENV || ( startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing') }}
+  WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE || ( startsWith(github.ref, 'refs/tags/v') && '' || format('{0}-{1}', github.event.repository.name,github.head_ref || github.ref_name)) }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
   WERF_SET_ENV: ${{ inputs.setenv }}
   WERF_REPO: ${{ inputs.registry }}

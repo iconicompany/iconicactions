@@ -1,4 +1,4 @@
-name: Prerelease Deployment
+name: Staging Deployment
 on:
   push:
     tags: ['v*-*']
@@ -7,5 +7,5 @@ jobs:
     uses: ./.github/workflows/deployment.yml
     secrets: inherit
     with:
-      WERF_ENV: prerelease
-      setenv: env.DOMAIN=prerelease.iconicompany.ru
+      WERF_ENV: staging
+      SETENV: env.DOMAIN=staging.iconicompany.ru
