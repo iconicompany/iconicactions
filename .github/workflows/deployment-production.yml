@@ -7,5 +7,5 @@ jobs:
     uses: ./.github/workflows/deployment.yml
     secrets: inherit
     with:
-      env: production
-      setenv: env.DOMAIN=iconicompany.ru
+      WERF_ENV: production
+      SETENV: env.DOMAIN=iconicompany.ru
