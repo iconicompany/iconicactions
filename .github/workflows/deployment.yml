@@ -55,6 +55,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  DOMAIN: ${{ inputs.DOMAIN }}
   WERF_ENV: ${{ inputs.WERF_ENV || ( startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing') }}
   WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE || format('{0}-{1}', github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
@@ -112,7 +113,9 @@ jobs:
       - uses: rlespinasse/slugify-value@v1.x
         with:
           key: WERF_NAMESPACE
-      - run: echo WERF_NAMESPACE=${WERF_NAMESPACE_SLUG_URL} >> $GITHUB_ENV
+      - run: |
+          echo WERF_NAMESPACE=${WERF_NAMESPACE_SLUG_URL} >> $GITHUB_ENV
+          echo DOMAIN=${{ env.WERF_ENV=='production' && '' || format('{0}.', env.WERF_NAMESPACE) }}${{ inputs.DOMAIN }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
@@ -123,7 +126,7 @@ jobs:
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
-          WERF_SET_ENV: env.DOMAIN=${{ env.WERF_ENV=='production' && '' || format('{0}.', env.WERF_NAMESPACE) }}${{ inputs.DOMAIN }}
+          WERF_SET_ENV: ${{ env.DOMAIN }}
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         run: . $(werf ci-env github --as-file); werf dismiss --with-namespace
