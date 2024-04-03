@@ -8,4 +8,4 @@ jobs:
     secrets: inherit
     with:
       WERF_ENV: production
-      SETENV: env.DOMAIN=iconicompany.ru
+      DOMAIN: iconicompany.ru
