@@ -2,7 +2,7 @@ name: Deployment
 on:
   workflow_call:
     inputs:
-      registry:
+      REGISTRY:
         description: Custom container registry, e.g. registry.gitlab.com/owner/repo. Will use ghcr.io/owner/repo/repo by default
         type: string
       WERF_ENV:
@@ -109,7 +109,7 @@ jobs:
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         run: |
           . $(werf ci-env github --as-file)
-          werf cr login
+          werf cr login -u ${{ secrets.REGISTRY_USERNAME || github.actor }} -p ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} ${{ inputs.registry || 'ghcr.io' }}
           werf converge
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
