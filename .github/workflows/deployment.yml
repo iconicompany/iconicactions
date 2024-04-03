@@ -108,8 +108,8 @@ jobs:
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         run: |
-          werf ci-env github --as-file
           . $(werf ci-env github --as-file)
+          werf cr login
           werf converge
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
