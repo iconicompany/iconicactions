@@ -109,9 +109,10 @@ jobs:
       #     env: ${{ env.WERF_ENV }}
       - name: Install werf
         uses: werf/actions/install@v1.2
-      - uses: rlespinasse/slugify-value@v1.x
-        with:
-          key: WERF_NAMESPACE
+      # - uses: rlespinasse/slugify-value@v1.x
+      #   with:
+      #     key: WERF_NAMESPACE
+      - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         run: |
