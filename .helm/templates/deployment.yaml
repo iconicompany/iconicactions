@@ -10,7 +10,7 @@ spec:
   template:
     metadata:
       annotations:
-        autocert.step.sm/name: {{ $.Values.werf.name }}-{{ $.Values.werf.env }}
+        autocert.step.sm/name: {{ $.Values.werf.name }}
       labels:
         app: {{ $.Values.werf.name }}
     spec:
@@ -32,6 +32,8 @@ spec:
           value: {{ $.Values.werf.env }}
         - name: WERF_NAME
           value: {{ $.Values.werf.name }}
+        - name: DATABASE_USER
+          value: {{ $.Values.werf.name }}_{{ $.Values.werf.env }}
         {{- range $name, $value := .Values.env }}
         - name: {{ $name }}
           value: {{ $value | quote }}
