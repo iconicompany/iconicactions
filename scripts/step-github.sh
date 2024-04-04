@@ -4,7 +4,8 @@ export STEP_PROVISIONER=${STEP_PROVISIONER:-"github-actions"}
 export STEP_NOT_AFTER=${STEP_NOT_AFTER:-"1h"}
 OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-"api://SmallstepCAProvisioner"}
 
-curl -LO https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
+#curl -LO https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
+curl -Lo step-cli_amd64.deb https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.26.0/step-cli_0.26.0_amd64.deb
 sudo dpkg -i step-cli_amd64.deb
 step ca bootstrap
 echo ACTIONS_ID_TOKEN_REQUEST_TOKEN=${ACTIONS_ID_TOKEN_REQUEST_TOKEN}
