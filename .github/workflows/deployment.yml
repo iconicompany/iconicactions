@@ -115,7 +115,7 @@ jobs:
         with:
           key: WERF_NAMESPACE
       - run: echo WERF_NAMESPACE=${WERF_NAMESPACE_SLUG_URL} >> $GITHUB_ENV
-      - run: echo DOMAIN=${{ env.WERF_ENV != 'production' && format('{0}.', env.WERF_NAMESPACE) }}${{ inputs.DOMAIN }} >> $GITHUB_ENV
+      - run: echo DOMAIN=${{ env.WERF_ENV != 'production' && format('{0}.', env.WERF_NAMESPACE) || '' }}${{ inputs.DOMAIN }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
