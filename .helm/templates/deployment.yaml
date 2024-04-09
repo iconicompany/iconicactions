@@ -32,8 +32,8 @@ spec:
           value: {{ $.Values.werf.env }}
         - name: WERF_NAME
           value: {{ $.Values.werf.name }}
-        - name: DATABASE_USER
-          value: {{ $.Values.werf.name }}_{{ $.Values.werf.env }}
+        - name: DATABASE_URL
+          value: "postgres://{{ $.Values.werf.name }}{{ $.Values.werf.env }}@postgresql01.kube01.icncd.ru/{{ $.Values.werf.name }}?schema={{ $.Values.werf.name }}{{ $.Values.werf.env }}&sslmode=require&sslrootcert=/var/run/autocert.step.sm/root.crt&sslcert=/var/run/autocert.step.sm/site.crt&sslkey=/var/run/autocert.step.sm/site.key"
         {{- range $name, $value := .Values.env }}
         - name: {{ $name }}
           value: {{ $value | quote }}
