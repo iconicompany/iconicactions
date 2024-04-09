@@ -1,7 +1,6 @@
 # iconicactions
 
 ## Configure secrets
-
 Example script to configure repo secrets:
 
 ```
