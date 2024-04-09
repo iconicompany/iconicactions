@@ -17,7 +17,7 @@ console.log(config);
 async function postgres_now() {
   const client = new Client(config);
   await client.connect();
-  const res = await client.query("SELECT NOW()");
+  const res = await client.query("select current_schema");
   await client.end();
   return res.rows[0];
 }
