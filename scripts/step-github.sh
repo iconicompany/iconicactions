@@ -19,6 +19,7 @@ SUBSCRIBER=$(echo $TOKEN | step crypto jwt inspect --insecure | jq -r .payload.s
 mkdir -p ${STEPCERTPATH}
 step ca certificate $SUBSCRIBER ${STEPCERTPATH}/my.crt ${STEPCERTPATH}/my.key --token "$TOKEN"
 step certificate inspect ${STEPCERTPATH}/my.crt
+cat ${STEPCERTPATH}/my.crt ${STEPCERTPATH}/my.key > ${STEPCERTPATH}/my.pem
 
 CERTIFICATEAUTHORITY_BASE64=$(cat ${HOME}/.step/certs/root_ca.crt | base64 -w0)
 CERTIFICATE_BASE64=$(cat ${STEPCERTPATH}/my.crt | base64 -w0)
