@@ -38,7 +38,7 @@ spec:
         - name: {{ $name }}
           value: {{ $value | quote }}
         {{- end }}
-      volumeMounts:
+        volumeMounts:
         - name: secret-volume
           readOnly: true
           subPath: ".env"
