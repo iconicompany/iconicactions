@@ -39,17 +39,11 @@ spec:
           value: {{ $value | quote }}
         {{- end }}
       volumeMounts:
-        - name: {{ $.Values.werf.name }}
-          mountPath: /var/apps/{{ $.Values.werf.name }}
-          subPath: var
         - name: secret-volume
           readOnly: true
           subPath: ".env"
           mountPath: "/app/.env"
       volumes:
-      - name: {{ $.Values.werf.name }}
-        persistentVolumeClaim:
-          claimName: {{ $.Values.werf.name }}-pvc
       - name: secret-volume
         secret:
           secretName: {{ $.Values.werf.name }}-secret
