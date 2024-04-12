@@ -1,3 +1,16 @@
+import dotenv from "dotenv";
+import dotenvExpand from "dotenv-expand";
+dotenvExpand.expand(
+  dotenv.config({
+    path: [
+      `.env.${process.env.NODE_ENV}.local`,
+      ".env.local",
+      `.env.${process.env.NODE_ENV}`,
+      ".env",
+    ],
+  })
+);
+
 import http from "http";
 import { createRouter } from "next-connect";
 
@@ -27,8 +40,9 @@ async function postgres_now() {
 
 const handler = createRouter()
   .get("/iconicactions", async (req, res) => {
-    const now = await(postgres_now());
-    res.end(JSON.stringify(now));
+    const now = await postgres_now();
+    const result = { now: now, SECRETENV: process.env.SECRETENV };
+    res.end(JSON.stringify(result));
   })
   .handler();
 

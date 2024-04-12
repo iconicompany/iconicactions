@@ -1,2 +1,0 @@
-export DATABASE_URL="postgres://postgresql01.kube01.icncd.ru/iconicactions?sslmode=require&sslrootcert=$HOME/.step/certs/root_ca.crt&sslcert=$HOME/.step/certs/my.crt&sslkey=$HOME/.step/certs/my.key"
-bun console.js
