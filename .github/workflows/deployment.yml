@@ -12,9 +12,9 @@ on:
         description: Werf namespace. Default value ${WERF_NAME}-${WERF_ENV}. Example value is branch/tag name "github.head_ref || github.ref_name"
         type: string
       DOMAIN:
-          description: Hosting domain, e.g. {{ github.repository_owner }}.icncd.ru
-          type: string
-          default: ${{ github.repository_owner }}.icncd.ru
+        description: Hosting domain, e.g. {{ github.repository_owner }}.icncd.ru
+        type: string
+        default: ${{ github.repository_owner }}.icncd.ru
       # SETENV:
       #   description: Some env variable, e.g. env.DOMAIN=example.com
       #   type: string
@@ -129,6 +129,7 @@ jobs:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
           WERF_SET_ENV: env.DOMAIN=${{ env.DOMAIN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         run: . $(werf ci-env github --as-file); werf dismiss --with-namespace
