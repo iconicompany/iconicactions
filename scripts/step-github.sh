@@ -5,9 +5,12 @@ export STEP_NOT_AFTER=${STEP_NOT_AFTER:-"1h"}
 OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-"api://SmallstepCAProvisioner"}
 
 #curl -LO https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
-curl -Lo step-cli_amd64.deb https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.26.0/step-cli_0.26.0_amd64.deb
-sudo dpkg -i step-cli_amd64.deb
-step ca bootstrap
+if ! command -v step > /dev/null; then
+    curl -Lo step-cli_amd64.deb https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.26.0/step-cli_0.26.0_amd64.deb
+    sudo dpkg -i step-cli_amd64.deb
+    rm -f step-cli_amd64.deb
+fi
+step ca bootstrap --force
 echo ACTIONS_ID_TOKEN_REQUEST_TOKEN=${ACTIONS_ID_TOKEN_REQUEST_TOKEN}
 TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${OIDC_CLIENT_ID}" | jq -r .value)
 curl -sLO https://token.actions.githubusercontent.com/.well-known/jwks
