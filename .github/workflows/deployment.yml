@@ -40,6 +40,10 @@ on:
       DOCKER_BUILDKIT:
         description: Flag to enable DOCKER_BUILDKIT
         type: boolean
+      RUNS_ON:
+        description: Runner requirements
+        type: string
+        default: ubuntu-latest
     secrets:
       REGISTRY_USERNAME:
         description: Container registry login. If not set, github.actor is used
@@ -72,7 +76,7 @@ permissions:
 jobs:
   deployment:
     name: Deployment
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.RUNS_ON) }}
     steps:
       - name: Step CA bootstrap
         id: bootstrap
