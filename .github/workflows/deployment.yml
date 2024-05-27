@@ -76,7 +76,7 @@ permissions:
 jobs:
   deployment:
     name: Deployment
-    runs-on: ${{ fromJSON(inputs.RUNS_ON) }}
+    runs-on: ${{ inputs.RUNS_ON }}
     steps:
       - name: Step CA bootstrap
         id: bootstrap
