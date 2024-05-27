@@ -112,7 +112,16 @@ jobs:
       #   with:
       #     kube-config-base64-data: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
       #     env: ${{ env.WERF_ENV }}
+      - name: Check werf installation
+        id: check_werf
+        run: |
+          if werf --version; then
+              echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+              echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install werf
+        if: steps.check_werf.outputs.installed == 'false'
         uses: werf/actions/install@v1.2
       # see also https://github.com/marketplace/actions/github-slug
       - uses: rlespinasse/slugify-value@v1.x
