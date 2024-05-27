@@ -1,5 +1,6 @@
 set -e -v
-STEPCERTPATH=$HOME/.step/certs
+export STEPPATH=$HOME/.step
+export STEPCERTPATH=$HOME/.step/certs
 export STEP_PROVISIONER=${STEP_PROVISIONER:-"github-actions"}
 export STEP_NOT_AFTER=${STEP_NOT_AFTER:-"1h"}
 OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-"api://SmallstepCAProvisioner"}
