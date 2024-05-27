@@ -21,7 +21,7 @@ echo $TOKEN | step crypto jwt verify \
 --iss "https://token.actions.githubusercontent.com"
 SUBSCRIBER=$(echo $TOKEN | step crypto jwt inspect --insecure | jq -r .payload.sub)
 mkdir -p ${STEPCERTPATH}
-step ca certificate $SUBSCRIBER ${STEPCERTPATH}/my.crt ${STEPCERTPATH}/my.key --token "$TOKEN"
+step ca certificate $SUBSCRIBER ${STEPCERTPATH}/my.crt ${STEPCERTPATH}/my.key --token "$TOKEN" --force
 step certificate inspect ${STEPCERTPATH}/my.crt
 cat ${STEPCERTPATH}/my.crt ${STEPCERTPATH}/my.key > ${STEPCERTPATH}/my.pem
 
