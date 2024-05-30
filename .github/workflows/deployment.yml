@@ -143,6 +143,7 @@ jobs:
           WERF_ENV: ${{ env.WERF_ENV }}
           WERF_SET_ENV: env.DOMAIN=${{ env.DOMAIN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KUBECONFIG: $HOME/.kube/config # for self-hosted kubectl from k3s to work
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         run: . $(werf ci-env github --as-file); werf dismiss --with-namespace
