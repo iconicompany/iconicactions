@@ -1,3 +1,6 @@
+{{ $envDict := dict "testing" ".dev" "development" ".dev" "production" ".com"}}
+{{ $tld := get $envDict .Values.werf.env }}
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -9,8 +12,19 @@ spec:
     - secretName: {{ $.Values.env.DOMAIN }}
       hosts:
         - {{ $.Values.env.DOMAIN }}
+        - {{ $.Values.env.DOMAIN | replace ".ru" $tld }}
   rules:
   - host: {{ $.Values.env.DOMAIN }}
+    http:
+      paths:
+      - path: /{{ $.Values.werf.name }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $.Values.werf.name }}
+            port:
+              number: 3000
+  - host: {{ $.Values.env.DOMAIN | replace ".ru" $tld }}
     http:
       paths:
       - path: /{{ $.Values.werf.name }}
