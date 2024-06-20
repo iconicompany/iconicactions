@@ -1,5 +1,11 @@
 # iconicactions
 
+## One line installations script
+
+Run this command in project dir:
+
+`curl -Lo - https://github.com/iconicompany/iconicactions/raw/main/install.sh | bash -`
+
 ## Configure secrets
 Example script to configure repo secrets:
 
