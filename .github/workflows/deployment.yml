@@ -44,6 +44,9 @@ on:
         description: Runner requirements
         type: string
         default: ubuntu-latest
+      WERF_SECRET_KEY:
+        description: Key for secret files/values. Required if secret files/values used in templates.
+        type: string
     secrets:
       REGISTRY_USERNAME:
         description: Container registry login. If not set, github.actor is used
@@ -65,7 +68,7 @@ env:
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
   # WERF_SET_ENV: ${{ inputs.setenv }}
   WERF_REPO: ${{ inputs.registry }}
-  WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
+  WERF_SECRET_KEY: ${{ inputs.WERF_SECRET_KEY || secrets.WERF_SECRET_KEY }}
   DOCKER_BUILDKIT: ${{inputs.DOCKER_BUILDKIT}}
   IS_LABELED_PR: ${{ github.event_name == 'pull_request' && contains( github.event.pull_request.labels.*.name, inputs.REVIEW_LABEL ) }}
 
