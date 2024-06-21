@@ -14,9 +14,9 @@ COPY package.json bun.lockb ./
 RUN bun install
 
 COPY *.js ./
-ENV DATABASE_URL=${DATABASE_URL}
 ENV NODE_ENV=${NODE_ENV}
-RUN --mount=type=bind,source=.step,target=/root/.step env DATABASE_URL=${DATABASE_URL} bun console.js
+#ENV DATABASE_URL=${DATABASE_URL}
+#RUN --mount=type=bind,source=.step,target=/root/.step env DATABASE_URL=${DATABASE_URL} bun console.js
 
 USER nodejs
 EXPOSE 3000
