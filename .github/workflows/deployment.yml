@@ -97,7 +97,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Copy Step Certifacates
+      - name: Copy Step Certificates
         if: ${{ inputs.COPY_STEP_CERT }}
         run: |
           cp -rv $HOME/.step ${{ github.workspace }}/.step
