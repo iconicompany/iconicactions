@@ -1,24 +1,33 @@
+# Use Bun as the base image
+FROM oven/bun:alpine
+
+# Set default environment variables
 ARG NODE_ENV=production
 ARG DATABASE_URL
-#FROM node:16.17-alpine
-FROM oven/bun:alpine
-ARG DATABASE_URL
-ARG NODE_ENV
+
+# Define working directory in the container
 WORKDIR /app
 
-RUN env && ls
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-#COPY package*.json ./
-#RUN npm install
+# Add a user and group for running the application
+RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+
+# Copy package.json and bun.lockb files to the working directory
 COPY package.json bun.lockb ./
+
+# Install dependencies using Bun
 RUN bun install
 
+# Copy all JavaScript files to the working directory
 COPY *.js ./
-ENV NODE_ENV=${NODE_ENV}
-#ENV DATABASE_URL=${DATABASE_URL}
-#RUN --mount=type=bind,source=.step,target=/root/.step env DATABASE_URL=${DATABASE_URL} bun console.js
 
+# Set environment variables for Node.js application
+ENV NODE_ENV=${NODE_ENV}
+
+# Switch to the non-root user
 USER nodejs
+
+# Expose port 3000 for the application
 EXPOSE 3000
 
-CMD bun start
+# Define the command to run the application using Bun
+CMD ["bun", "start"]
