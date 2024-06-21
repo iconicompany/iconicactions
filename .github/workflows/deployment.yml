@@ -47,6 +47,9 @@ on:
       WERF_SECRET_KEY:
         description: Key for secret files/values. Required if secret files/values used in templates.
         type: string
+      COPY_STEP_CERT:
+        description: Copy .step with x509 certificates to workspace
+        type: boolean
     secrets:
       REGISTRY_USERNAME:
         description: Container registry login. If not set, github.actor is used
@@ -94,7 +97,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: |
+      - name: Copy Step Certifacates
+        if: ${{ inputs.COPY_STEP_CERT }}
+        run: |
           cp -rv $HOME/.step ${{ github.workspace }}/.step
       # - name: Login to Registry
       #   if: inputs.registry
