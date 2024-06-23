@@ -123,7 +123,7 @@ jobs:
       - name: Check werf installation
         id: check_werf
         run: |
-          if werf --version; then
+          if werf; then
               echo "installed=true" >> "$GITHUB_OUTPUT"
           else
               echo "installed=false" >> "$GITHUB_OUTPUT"
