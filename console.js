@@ -29,3 +29,15 @@ async function postgres_now() {
 const res = await(postgres_now());
 console.log(res);
 
+
+
+async function postgres_conn() {
+  const client = new Client(config);
+  await client.connect();
+  const res = await client.query("SELECT * FROM pg_stat_activity");
+  await client.end();
+  return res.rows[0];
+}
+
+const resconn = await(postgres_conn());
+console.log(resconn);
