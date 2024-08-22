@@ -61,6 +61,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
+  storageClassName: nfs
   resources:
     requests:
       storage: 2Gi
