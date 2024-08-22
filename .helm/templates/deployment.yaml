@@ -39,11 +39,28 @@ spec:
           value: {{ $value | quote }}
         {{- end }}
         volumeMounts:
+        - name: {{ $.Values.werf.name }}
+          mountPath: /var/apps/{{ $.Values.werf.name }}
+          subPath: var
         - name: secret-volume
           readOnly: true
           subPath: ".env"
           mountPath: "/app/.env.production.local"
       volumes:
+      - name: {{ $.Values.werf.name }}
+        persistentVolumeClaim:
+          claimName: {{ $.Values.werf.name }}-pvc
       - name: secret-volume
         secret:
           secretName: {{ $.Values.werf.name }}-secret
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Values.werf.name }}-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
