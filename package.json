@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "prisma generate",
-    "deploy": "node src/createdb.js && prisma migrate deploy && prisma db seed",
+    "deploy": "prisma migrate deploy && prisma db seed",
     "migrate:dev": "prisma migrate dev",
     "prisma:push": "prisma db push",
     "prisma:generate": "prisma generate",
