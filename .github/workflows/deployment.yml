@@ -50,7 +50,7 @@ on:
       COPY_STEP_CERT:
           description: Copy .step with x509 certificates to workspace
           type: boolean
-      DATABASE_HOST:
+      DATABASE_URL:
         description: Database DATABASE_HOST for testing 
         type: string
     secrets:
@@ -69,7 +69,8 @@ concurrency:
 
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
-  WERF_ENV: ${{ inputs.WERF_ENV || ( startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing') }}
+  WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
+  APP_ENV:  ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) }}
   WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE || format('{0}-{1}', github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
@@ -105,12 +106,28 @@ jobs:
         if: ${{ inputs.COPY_STEP_CERT }}
         run: |
           cp -rv $HOME/.step ${{ github.workspace }}/.step
-      - name: Setup database
-        if: ${{ inputs.DATABASE_HOST }}
+      - name: Extract URL parts
+        id: database
         run: |
-          echo "create user \"${WERF_NAME}${WERF_ENV}\" with CREATEDB;" | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres  
+          URL=${{ inputs.DATABASE_URL }}
+          PROTOCOL=$(echo $URL | sed -n 's,^\(.*://\).*,\1,p' | sed 's,://,,')
+          echo "PROTOCOL=$PROTOCOL" >> $GITHUB_OUTPUT
+          USER=$(echo $URL | sed -n 's,.*://\([^:]*\):.*@.*,\1,p')
+          PASSWORD=$(echo $URL | sed -n 's,.*://[^:]*:\([^@]*\)@.*,\1,p')
+          echo "PASSWORD=$PASSWORD"  >> $GITHUB_OUTPUT
+          HOST=$(echo $URL | sed -n 's,.*@\(.*\):.*,\1,p')
+          echo "HOST=$HOST"  >> $GITHUB_OUTPUT
+          PORT=$(echo $URL | sed -n 's,.*:\([0-9]*\)/.*,\1,p')
+          echo "PORT=$PORT" >> $GITHUB_OUTPUT
+          PATH=$(echo $URL | sed -n 's,.*:[0-9]*\(.*\),\1,p')
+          echo "PATH=$PATH" >> $GITHUB_OUTPUT
+      - name: Setup database
+        if: ${{ steps.database.outputs.HOST }}
+        run: |
+          echo "create user \"${DATABASE_USER}\" with CREATEDB;" | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres  
         env:
-          DATABASE_HOST: ${{ inputs.DATABASE_HOST }}
+          DATABASE_USER: ${{ steps.database.outputs.USER ||  format('{0}{1}', env.WERF_NAME, env.APP_ENV)  }}
+          DATABASE_HOST: ${{ steps.database.outputs.HOST }}
       # - name: Login to Registry
       #   if: inputs.registry
       #   uses: docker/login-action@v3
