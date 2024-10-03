@@ -48,8 +48,11 @@ on:
         description: Key for secret files/values. Required if secret files/values used in templates.
         type: string
       COPY_STEP_CERT:
-        description: Copy .step with x509 certificates to workspace
-        type: boolean
+          description: Copy .step with x509 certificates to workspace
+          type: boolean
+      DATABASE_HOST:
+        description: Database DATABASE_HOST for testing 
+        type: string
     secrets:
       REGISTRY_USERNAME:
         description: Container registry login. If not set, github.actor is used
@@ -67,6 +70,7 @@ concurrency:
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
   WERF_ENV: ${{ inputs.WERF_ENV || ( startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing') }}
+  WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE || format('{0}-{1}', github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
   # WERF_SET_ENV: ${{ inputs.setenv }}
@@ -101,6 +105,12 @@ jobs:
         if: ${{ inputs.COPY_STEP_CERT }}
         run: |
           cp -rv $HOME/.step ${{ github.workspace }}/.step
+      - name: Setup database
+        if: ${{ inputs.DATABASE_HOST }}
+        run: |
+          echo "create user \"${WERF_NAME}${WERF_ENV}\" with CREATEDB;" | psql -h "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}@$DATABASE_HOST" postgres  
+        env:
+          DATABASE_HOST: ${{ inputs.DATABASE_HOST }}
       # - name: Login to Registry
       #   if: inputs.registry
       #   uses: docker/login-action@v3
