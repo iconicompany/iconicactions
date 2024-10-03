@@ -3,11 +3,21 @@
   "module": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js"
+    "build": "prisma generate",
+    "deploy": "node src/createdb.js && prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "prisma:generate": "prisma generate",
+    "start": "node src/index.js",
+    "console": "node src/console.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@prisma/client": "5.20.0",
     "dotenv-expand": "^11.0.6",
     "next-connect": "^1.0.0",
-    "pg": "^8.11.3"
+    "prisma": "^5.20.0"
   }
 }
