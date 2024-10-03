@@ -1,33 +1,58 @@
-# Use Bun as the base image
-FROM oven/bun:alpine
+ARG NODE_REPO=oven/bun:alpine
+ARG NODE_LOCK=bun.lockb
+ARG NPM=bun
+ARG NODE=bun
+ARG RUNNER_REPO=oven/bun:alpine # node:20-alpine, bcgovimages/alpine-node-libreoffice:20, etc
+ARG RUNNER_NPM=bun # npm, pnpm, etc
 
-# Set default environment variables
-ARG NODE_ENV=production
-ARG DATABASE_URL
+# ARG NODE_REPO=node
+# ARG NODE_VERSION=20-alpine
+# ARG NODE_LOCK=pnpm-lock.yaml
+# ARG NPM=pnpm
+# ARG NODE=pnpm
 
-# Define working directory in the container
+FROM ${NODE_REPO} AS base
+# RUN apk add --no-cache libstdc++
+# RUN npm i -g pnpm@latest
+
+FROM base AS prod-deps
+ARG NODE_LOCK
+ARG NPM
 WORKDIR /app
+COPY package.json ${NODE_LOCK} ./
+RUN ${NPM} install --frozen-lockfile --production
 
-# Add a user and group for running the application
-RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+FROM prod-deps AS deps
+ARG NODE_LOCK
+ARG NPM
+WORKDIR /app
+COPY package.json ${NODE_LOCK} ./
+RUN ${NPM} install  --frozen-lockfile
 
-# Copy package.json and bun.lockb files to the working directory
-COPY package.json bun.lockb ./
+#FROM deps as builder
+#ARG NPM
+#WORKDIR /app
+#ENV NODE_ENV=production
+#COPY src src
+#COPY *.?js *.yaml *.ts? *.json *.lock? ./
+#RUN ${NPM} run build
 
-# Install dependencies using Bun
-RUN bun install
-
-# Copy all JavaScript files to the working directory
-COPY *.js ./
-
-# Set environment variables for Node.js application
-ENV NODE_ENV=${NODE_ENV}
-
-# Switch to the non-root user
-USER nodejs
-
-# Expose port 3000 for the application
+# Production image, copy all the files and run next
+FROM prod-deps AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+#RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+USER 1000
 EXPOSE 3000
 
-# Define the command to run the application using Bun
-CMD ["bun", "start"]
+#COPY --from=prod-deps /app/node_modules ./node_modules
+COPY package.json ./
+COPY src src
+#COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+#COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+#COPY --from=builder --chown=nextjs:nodejs /app/next.config.mjs ./
+# ENTRYPOINT ["ls", "-ln", "/var/run/autocert.step.sm"]
+ENTRYPOINT ["bun", "start"]
+
+#CMD "bun src/index.js"
+#CMD ["node", "src/index.js"]
