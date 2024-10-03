@@ -38,7 +38,7 @@ ln -vfs ${KEY_LOCATION} ${KEY_LOCATION_PG}
 ln -vfs ${CERT_LOCATION} ${CERT_LOCATION_PG}
 ln -vfs ${CA_LOCATION} ${CA_LOCATION_PG}
 
-CERTIFICATE_CN=$(step certificate inspect my.crt  --format=json | jq  .subject.common_name[0])
+CERTIFICATE_CN=$(step certificate inspect ${CERT_LOCATION}  --format=json | jq  .subject.common_name[0])
 echo "CERTIFICATE_CN=$CERTIFICATE_CN" >> $GITHUB_OUTPUT
 
 CERTIFICATEAUTHORITY_BASE64=$(cat ${HOME}/.step/certs/root_ca.crt | base64 -w0)
