@@ -12,3 +12,4 @@ jobs:
       DOCKER_BUILDKIT: true
       WERF_ENV: testing
       DOMAIN: ${{ github.repository_owner }}.icncd.ru
+      DATABASE_HOST: postgresql01.kube01.icncd.ru
