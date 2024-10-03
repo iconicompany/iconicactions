@@ -45,7 +45,7 @@ spec:
         - name: secret-volume
           readOnly: true
           subPath: ".env"
-          mountPath: "/app/.env.production.local"
+          mountPath: "/app/.env"
       volumes:
       - name: {{ $.Values.werf.name }}
         persistentVolumeClaim:
