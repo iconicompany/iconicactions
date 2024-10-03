@@ -5,6 +5,15 @@ export STEP_PROVISIONER=${STEP_PROVISIONER:-"github-actions"}
 export STEP_NOT_AFTER=${STEP_NOT_AFTER:-"1h"}
 OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-"api://SmallstepCAProvisioner"}
 
+CERT_LOCATION=${STEPCERTPATH}/my.crt
+KEY_LOCATION=${STEPCERTPATH}/my.key
+PEM_LOCATION=${STEPCERTPATH}/my.pem
+PGCERTPATH=$HOME/.postgresql
+CERT_LOCATION_PG=${PGCERTPATH}/postgresql.crt
+KEY_LOCATION_PG=${PGCERTPATH}/postgresql.key
+CA_LOCATION=${STEPPATH}/certs/root_ca.crt
+CA_LOCATION_PG=${PGCERTPATH}/root.crt
+
 #curl -LO https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
 if ! command -v step > /dev/null; then
     curl -Lo step-cli_amd64.deb https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.26.0/step-cli_0.26.0_amd64.deb
@@ -20,10 +29,14 @@ echo $TOKEN | step crypto jwt verify \
 --aud ${OIDC_CLIENT_ID} \
 --iss "https://token.actions.githubusercontent.com"
 SUBSCRIBER=$(echo $TOKEN | step crypto jwt inspect --insecure | jq -r .payload.sub)
-mkdir -p ${STEPCERTPATH}
-step ca certificate $SUBSCRIBER ${STEPCERTPATH}/my.crt ${STEPCERTPATH}/my.key --token "$TOKEN" --force
-step certificate inspect ${STEPCERTPATH}/my.crt
-cat ${STEPCERTPATH}/my.crt ${STEPCERTPATH}/my.key > ${STEPCERTPATH}/my.pem
+mkdir -p $STEPCERTPATH $PGCERTPATH
+step ca certificate $SUBSCRIBER ${CERT_LOCATION} ${KEY_LOCATION} --token "$TOKEN" --force
+step certificate inspect ${CERT_LOCATION}
+cat ${CERT_LOCATION} ${KEY_LOCATION} > ${PEM_LOCATION}
+# required for psql
+ln -vfs ${KEY_LOCATION} ${KEY_LOCATION_PG}
+ln -vfs ${CERT_LOCATION} ${CERT_LOCATION_PG}
+ln -vfs ${CA_LOCATION} ${CA_LOCATION_PG}
 
 CERTIFICATEAUTHORITY_BASE64=$(cat ${HOME}/.step/certs/root_ca.crt | base64 -w0)
 CERTIFICATE_BASE64=$(cat ${STEPCERTPATH}/my.crt | base64 -w0)
