@@ -48,8 +48,11 @@ on:
         description: Key for secret files/values. Required if secret files/values used in templates.
         type: string
       COPY_STEP_CERT:
-        description: Copy .step with x509 certificates to workspace
-        type: boolean
+          description: Copy .step with x509 certificates to workspace
+          type: boolean
+      DATABASE_URL:
+        description: Database URL for testing 
+        type: string
     secrets:
       REGISTRY_USERNAME:
         description: Container registry login. If not set, github.actor is used
@@ -101,6 +104,12 @@ jobs:
         if: ${{ inputs.COPY_STEP_CERT }}
         run: |
           cp -rv $HOME/.step ${{ github.workspace }}/.step
+      - name: Setup database
+        if: ${{ inputs.DATABASE_URL }}
+        run: |
+          curl -Ls https://github.com/iconicompany/iconicactions/raw/main/scripts/db-github.sh | bash -
+        env:
+          DATABASE_URL: ${{ inputs.DATABASE_URL }}
       # - name: Login to Registry
       #   if: inputs.registry
       #   uses: docker/login-action@v3
