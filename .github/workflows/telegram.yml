@@ -3,26 +3,26 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-  issues:
-    types: [opened, closed, reopened, edited]
-  issue_comment:
-    types: [created, edited, deleted]
-  discussion:
-    types: [created, edited, deleted]
-  release:
-    types: [published, edited, deleted]
-  pull_request_review_comment:
-    types: [created, edited, deleted]
-  check_run:
-    types: [created, completed, requested_action, rerequested]
-  project:
-    types: [created, edited, closed, reopened, deleted]
-  merge_group:
-    types:
-      - checks_requested
+  # pull_request:
+  #   branches:
+  #     - main
+  # issues:
+  #   types: [opened, closed, reopened, edited]
+  # issue_comment:
+  #   types: [created, edited, deleted]
+  # discussion:
+  #   types: [created, edited, deleted]
+  # release:
+  #   types: [published, edited, deleted]
+  # pull_request_review_comment:
+  #   types: [created, edited, deleted]
+  # check_run:
+  #   types: [created, completed, requested_action, rerequested]
+  # project:
+  #   types: [created, edited, closed, reopened, deleted]
+  # merge_group:
+  #   types:
+  #     - checks_requested
 jobs:
   build:
     runs-on: ubuntu-latest
