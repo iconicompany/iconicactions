@@ -108,7 +108,7 @@ jobs:
       - name: Setup database
         if: ${{ inputs.DATABASE_HOST }}
         run: |
-          echo "create user \"${WERF_NAME}${WERF_ENV}\" with CREATEDB;" | psql -h "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}@$DATABASE_HOST" postgres  
+          echo "create user \"${WERF_NAME}${WERF_ENV}\" with CREATEDB;" | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres  
         env:
           DATABASE_HOST: ${{ inputs.DATABASE_HOST }}
       # - name: Login to Registry
