@@ -106,28 +106,38 @@ jobs:
         if: ${{ inputs.COPY_STEP_CERT }}
         run: |
           cp -rv $HOME/.step ${{ github.workspace }}/.step
-      - name: Extract URL parts
+      - name: Parse DATABASE_URL
         id: database
         run: |
-          URL=${{ inputs.DATABASE_URL }}
-          PROTOCOL=$(echo $URL | sed -n 's,^\(.*://\).*,\1,p' | sed 's,://,,')
-          echo "PROTOCOL=$PROTOCOL" >> $GITHUB_OUTPUT
-          USER=$(echo $URL | sed -n 's,.*://\([^:]*\):.*@.*,\1,p')
-          PASSWORD=$(echo $URL | sed -n 's,.*://[^:]*:\([^@]*\)@.*,\1,p')
-          echo "PASSWORD=$PASSWORD"  >> $GITHUB_OUTPUT
-          HOST=$(echo $URL | sed -n 's,.*@\(.*\):.*,\1,p')
-          echo "HOST=$HOST"  >> $GITHUB_OUTPUT
-          PORT=$(echo $URL | sed -n 's,.*:\([0-9]*\)/.*,\1,p')
-          echo "PORT=$PORT" >> $GITHUB_OUTPUT
-          PATH=$(echo $URL | sed -n 's,.*:[0-9]*\(.*\),\1,p')
-          echo "PATH=$PATH" >> $GITHUB_OUTPUT
+          url=${{ inputs.DATABASE_URL }}
+          protocol=$(echo "$url" | grep "://" | sed -e's,^\(.*://\).*,\1,g')
+          url_no_protocol=$(echo "${url/$protocol/}")
+          protocol=$(echo "$protocol" | tr '[:upper:]' '[:lower:]')
+          userpass=$(echo "$url_no_protocol" | grep "@" | cut -d"/" -f1 | rev | cut -d"@" -f2- | rev)
+          pass=$(echo "$userpass" | grep ":" | cut -d":" -f2)
+          if [ -n "$pass" ]; then
+            user=$(echo "$userpass" | grep ":" | cut -d":" -f1)
+          else
+            user="$userpass"
+          fi
+          hostport=$(echo "${url_no_protocol/$userpass@/}" | cut -d"/" -f1)
+          host=$(echo "$hostport" | cut -d":" -f1)
+          port=$(echo "$hostport" | grep ":" | cut -d":" -f2)
+          path=$(echo "$url_no_protocol" | grep "/" | cut -d"/" -f2-)
+          echo "protocol=$protocol" >> $GITHUB_OUTPUT
+          echo "userpass=$userpass" >> $GITHUB_OUTPUT
+          echo "user=$user" >> $GITHUB_OUTPUT
+          echo "pass=$pass" >> $GITHUB_OUTPUT
+          echo "host=$host" >> $GITHUB_OUTPUT
+          echo "port=$port" >> $GITHUB_OUTPUT
+          echo "path=$path" >> $GITHUB_OUTPUT
       - name: Setup database
         if: ${{ steps.database.outputs.HOST }}
         run: |
           echo "create user \"${DATABASE_USER}\" with CREATEDB;" | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres  
         env:
-          DATABASE_USER: ${{ steps.database.outputs.USER ||  format('{0}{1}', env.WERF_NAME, env.APP_ENV)  }}
-          DATABASE_HOST: ${{ steps.database.outputs.HOST }}
+          DATABASE_USER: ${{ steps.database.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.APP_ENV)  }}
+          DATABASE_HOST: ${{ steps.database.outputs.host }}
       # - name: Login to Registry
       #   if: inputs.registry
       #   uses: docker/login-action@v3
