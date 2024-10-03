@@ -70,7 +70,6 @@ concurrency:
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
-  APP_ENV:  ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) }}
   WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE || format('{0}-{1}', github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
@@ -136,8 +135,8 @@ jobs:
         run: |
           echo "create user \"${DATABASE_USER}\" with CREATEDB;" | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres  
         env:
-          DATABASE_USER: ${{ steps.database.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.APP_ENV)  }}
-          # DATABASE_NAME: ${{ steps.database.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.APP_ENV)  }}
+          DATABASE_USER: ${{ steps.database.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
+          # DATABASE_NAME: ${{ steps.database.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
           DATABASE_HOST: ${{ steps.database.outputs.host }}
       # - name: Login to Registry
       #   if: inputs.registry
