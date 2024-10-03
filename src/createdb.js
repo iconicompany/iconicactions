@@ -22,7 +22,7 @@ async function createDB() {
   }
 }
 
-createDB().then().catch(async (e) => {
+createDB().then().catch((e) => {
   console.error(e)
   process.exit(1)
 })
