@@ -70,7 +70,7 @@ concurrency:
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
-  APP_ENV:  ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) }}
+  APP_ENV:  ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) }}
   WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE || format('{0}-{1}', github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
