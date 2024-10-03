@@ -1,27 +1,28 @@
 import dotenv from 'dotenv'
 import dotenvExpand from 'dotenv-expand';
-dotenvExpand.expand(dotenv.config({ path: [ `.env.${process.env.NODE_ENV}.local`, '.env.local', `.env.${process.env.NODE_ENV}`, '.env'] }));
+dotenvExpand.expand(dotenv.config({ path: [`.env.${process.env.NODE_ENV}.local`, '.env.local', `.env.${process.env.NODE_ENV}`, '.env'] }));
+import { PrismaClient } from '@prisma/client'
 
 // prisma сама создает БД, но если нужно создание по шаблону, тут можно сделать правки
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
-
 
 async function createDB() {
-
   const databaseUrl = new URL(process.env.DATABASE_URL);
-  const createDbName=databaseUrl.pathname.slice(1);;
-  databaseUrl.pathname='postgres';
-  process.env.DATABASE_URL=databaseUrl.toString();
-
-  return await prisma.$executeRaw`CREATE DATABASE ${createDbName}`;
+  const createDbName = databaseUrl.pathname.slice(1);
+  databaseUrl.pathname = 'postgres'; // always exists
+  process.env.DATABASE_URL = databaseUrl.toString();
+  const prisma = new PrismaClient()
+  try {
+    const exists = await prisma.$queryRaw`SELECT datname FROM pg_catalog.pg_database WHERE datname = ${createDbName}`;
+    if (exists.length === 0) {
+      await prisma.$executeRawUnsafe(`CREATE DATABASE "${createDbName}"`);
+    }
+  } catch (e) {
+    await prisma.$disconnect()
+    throw e;
+  }
 }
 
-createDB().then(async () => {
-  await prisma.$disconnect()
-})
-.catch(async (e) => {
+createDB().then().catch(async (e) => {
   console.error(e)
-  await prisma.$disconnect()
   process.exit(1)
 })

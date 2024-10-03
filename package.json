@@ -9,7 +9,8 @@
     "prisma:push": "prisma db push",
     "prisma:generate": "prisma generate",
     "start": "node src/index.js",
-    "console": "node src/console.js"
+    "console": "node src/console.js",
+    "createdb": "node src/createdb.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
