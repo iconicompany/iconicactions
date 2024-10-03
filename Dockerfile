@@ -51,8 +51,5 @@ COPY src src
 #COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 #COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 #COPY --from=builder --chown=nextjs:nodejs /app/next.config.mjs ./
-# ENTRYPOINT ["ls", "-ln", "/var/run/autocert.step.sm"]
-ENTRYPOINT ["bun", "start"]
 
-#CMD "bun src/index.js"
-#CMD ["node", "src/index.js"]
+CMD "bun deploy && bun start"
