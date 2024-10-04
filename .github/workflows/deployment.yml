@@ -135,19 +135,19 @@ jobs:
         run: |
           if ! psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DATABASE_USER';" | grep -q 1; then
             psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create user \"${DATABASE_USER}\" with CREATEDB;"  
+            psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "GRANT \"${DATABASE_USER}\" TO current_user;"  
           fi
           if [[ -f "$DUMPFILE" ]]; then
             if ! psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_TEMPLATE';" | grep -q 1; then
-              psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create database \"${DATABASE_TEMPLATE}\" IS_TEMPLATE=true;"
-              psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "GRANT ALL PRIVILEGES ON DATABASE \"${DATABASE_TEMPLATE}\" to \"${DATABASE_USER}\";"
+              psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create database \"${DATABASE_NAME}\" OWNER \"${DATABASE_USER}\";"
               cat "$DUMPFILE"  | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_TEMPLATE}"  
             fi
           fi
         env:
           CONNECT_USER: ${{ steps.bootstrap.outputs.CERTIFICATE_CN }}
           DATABASE_USER: ${{ steps.database.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
-          #DATABASE_NAME: ${{ steps.database.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
-          DATABASE_TEMPLATE: ${{ format('{0}{1}', env.WERF_NAME, 'template') }}
+          DATABASE_NAME: ${{ steps.database.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
+          #DATABASE_TEMPLATE: ${{ format('{0}{1}', env.WERF_NAME, 'template') }}
           DATABASE_HOST: ${{ steps.database.outputs.host }}
           DUMPFILE: "sql/data.sql"
       # - name: Login to Registry
