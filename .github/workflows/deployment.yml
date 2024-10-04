@@ -140,7 +140,8 @@ jobs:
           if [[ -f "$DUMPFILE" ]]; then
             if ! psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_NAME';" | grep -q 1; then
               psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create database \"${DATABASE_NAME}\" OWNER \"${DATABASE_USER}\";"
-              cat "$DUMPFILE"  | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_NAME}"  
+              cat "$DUMPFILE"  | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_NAME}"
+              psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_NAME}" -c "REASSIGN OWNED BY current_user TO \"${DATABASE_USER}\";"
             fi
           fi
         env:
