@@ -138,7 +138,7 @@ jobs:
           fi
           if [[ -f "$DUMPFILE" ]]; then
             if ! psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_TEMPLATE';" | grep -q 1; then
-              psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create database \"${DATABASE_TEMPLATE}\" IS_TEMPLATE=true;"
+              psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create database \"${DATABASE_TEMPLATE}\" IS_TEMPLATE=true; GRANT ALL PRIVILEGES ON DATABASE \"${DATABASE_TEMPLATE}\" to \"${DATABASE_USER}\";"
               cat "$DUMPFILE"  | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_TEMPLATE}"  
             fi
           fi
