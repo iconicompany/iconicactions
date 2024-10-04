@@ -21,7 +21,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: EducationLevel; Type: TABLE; Schema: public; Owner: iconicactionstesting
+-- Name: EducationLevel; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."EducationLevel" (
@@ -31,10 +31,8 @@ CREATE TABLE public."EducationLevel" (
 );
 
 
-ALTER TABLE public."EducationLevel" OWNER TO iconicactionstesting;
-
 --
--- Name: EducationLevel_id_seq; Type: SEQUENCE; Schema: public; Owner: iconicactionstesting
+-- Name: EducationLevel_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."EducationLevel_id_seq"
@@ -46,17 +44,15 @@ CREATE SEQUENCE public."EducationLevel_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."EducationLevel_id_seq" OWNER TO iconicactionstesting;
-
 --
--- Name: EducationLevel_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: iconicactionstesting
+-- Name: EducationLevel_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."EducationLevel_id_seq" OWNED BY public."EducationLevel".id;
 
 
 --
--- Name: Post; Type: TABLE; Schema: public; Owner: iconicactionstesting
+-- Name: Post; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Post" (
@@ -68,10 +64,8 @@ CREATE TABLE public."Post" (
 );
 
 
-ALTER TABLE public."Post" OWNER TO iconicactionstesting;
-
 --
--- Name: Post_id_seq; Type: SEQUENCE; Schema: public; Owner: iconicactionstesting
+-- Name: Post_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."Post_id_seq"
@@ -83,17 +77,15 @@ CREATE SEQUENCE public."Post_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."Post_id_seq" OWNER TO iconicactionstesting;
-
 --
--- Name: Post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: iconicactionstesting
+-- Name: Post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."Post_id_seq" OWNED BY public."Post".id;
 
 
 --
--- Name: User; Type: TABLE; Schema: public; Owner: iconicactionstesting
+-- Name: User; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."User" (
@@ -103,10 +95,8 @@ CREATE TABLE public."User" (
 );
 
 
-ALTER TABLE public."User" OWNER TO iconicactionstesting;
-
 --
--- Name: User_id_seq; Type: SEQUENCE; Schema: public; Owner: iconicactionstesting
+-- Name: User_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."User_id_seq"
@@ -118,17 +108,15 @@ CREATE SEQUENCE public."User_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."User_id_seq" OWNER TO iconicactionstesting;
-
 --
--- Name: User_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: iconicactionstesting
+-- Name: User_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."User_id_seq" OWNED BY public."User".id;
 
 
 --
--- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: iconicactionstesting
+-- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public._prisma_migrations (
@@ -143,31 +131,29 @@ CREATE TABLE public._prisma_migrations (
 );
 
 
-ALTER TABLE public._prisma_migrations OWNER TO iconicactionstesting;
-
 --
--- Name: EducationLevel id; Type: DEFAULT; Schema: public; Owner: iconicactionstesting
+-- Name: EducationLevel id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."EducationLevel" ALTER COLUMN id SET DEFAULT nextval('public."EducationLevel_id_seq"'::regclass);
 
 
 --
--- Name: Post id; Type: DEFAULT; Schema: public; Owner: iconicactionstesting
+-- Name: Post id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Post" ALTER COLUMN id SET DEFAULT nextval('public."Post_id_seq"'::regclass);
 
 
 --
--- Name: User id; Type: DEFAULT; Schema: public; Owner: iconicactionstesting
+-- Name: User id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."User" ALTER COLUMN id SET DEFAULT nextval('public."User_id_seq"'::regclass);
 
 
 --
--- Data for Name: EducationLevel; Type: TABLE DATA; Schema: public; Owner: iconicactionstesting
+-- Data for Name: EducationLevel; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."EducationLevel" (id, code, name) FROM stdin;
@@ -183,7 +169,7 @@ COPY public."EducationLevel" (id, code, name) FROM stdin;
 
 
 --
--- Data for Name: Post; Type: TABLE DATA; Schema: public; Owner: iconicactionstesting
+-- Data for Name: Post; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Post" (id, title, content, published, "authorId") FROM stdin;
@@ -191,7 +177,7 @@ COPY public."Post" (id, title, content, published, "authorId") FROM stdin;
 
 
 --
--- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: iconicactionstesting
+-- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."User" (id, email, name) FROM stdin;
@@ -200,7 +186,7 @@ COPY public."User" (id, email, name) FROM stdin;
 
 
 --
--- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public; Owner: iconicactionstesting
+-- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public._prisma_migrations (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count) FROM stdin;
@@ -210,28 +196,28 @@ c92ffaeb-fa94-4f4a-9263-df73f3e73476	e240624b6625098b29c8a36e4fd6a45e7d31789b931
 
 
 --
--- Name: EducationLevel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: iconicactionstesting
+-- Name: EducationLevel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
 SELECT pg_catalog.setval('public."EducationLevel_id_seq"', 8, true);
 
 
 --
--- Name: Post_id_seq; Type: SEQUENCE SET; Schema: public; Owner: iconicactionstesting
+-- Name: Post_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
 SELECT pg_catalog.setval('public."Post_id_seq"', 1, false);
 
 
 --
--- Name: User_id_seq; Type: SEQUENCE SET; Schema: public; Owner: iconicactionstesting
+-- Name: User_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
 SELECT pg_catalog.setval('public."User_id_seq"', 2, true);
 
 
 --
--- Name: EducationLevel EducationLevel_pkey; Type: CONSTRAINT; Schema: public; Owner: iconicactionstesting
+-- Name: EducationLevel EducationLevel_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."EducationLevel"
@@ -239,7 +225,7 @@ ALTER TABLE ONLY public."EducationLevel"
 
 
 --
--- Name: Post Post_pkey; Type: CONSTRAINT; Schema: public; Owner: iconicactionstesting
+-- Name: Post Post_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Post"
@@ -247,7 +233,7 @@ ALTER TABLE ONLY public."Post"
 
 
 --
--- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: iconicactionstesting
+-- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."User"
@@ -255,7 +241,7 @@ ALTER TABLE ONLY public."User"
 
 
 --
--- Name: _prisma_migrations _prisma_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: iconicactionstesting
+-- Name: _prisma_migrations _prisma_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public._prisma_migrations
@@ -263,21 +249,21 @@ ALTER TABLE ONLY public._prisma_migrations
 
 
 --
--- Name: EducationLevel_code_key; Type: INDEX; Schema: public; Owner: iconicactionstesting
+-- Name: EducationLevel_code_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "EducationLevel_code_key" ON public."EducationLevel" USING btree (code);
 
 
 --
--- Name: User_email_key; Type: INDEX; Schema: public; Owner: iconicactionstesting
+-- Name: User_email_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "User_email_key" ON public."User" USING btree (email);
 
 
 --
--- Name: Post Post_authorId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: iconicactionstesting
+-- Name: Post Post_authorId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Post"
