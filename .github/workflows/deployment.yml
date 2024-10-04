@@ -133,10 +133,12 @@ jobs:
       - name: Setup database
         if: ${{ steps.database.outputs.HOST }}
         run: |
-          echo "create user \"${DATABASE_USER}\" with CREATEDB;" | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres  
+          if ! psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DATABASE_USER';" | grep -q 1; then
+            psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create user \"${DATABASE_USER}\" with CREATEDB;"  
+          fi
           if [[ -f "$DUMPFILE" ]]; then
-            if psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_TEMPLATE';" | grep -q 0; then
-              echo "create database \"${DATABASE_TEMPLATE}\"; GRANT ALL PRIVILEGES ON DATABASE \"${DATABASE_TEMPLATE}\" to \"${DATABASE_USER}\";" | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres  
+            if ! psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_TEMPLATE';" | grep -q 1; then
+              psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create database \"${DATABASE_TEMPLATE}\" IS_TEMPLATE=true;"
               cat "$DUMPFILE"  | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_TEMPLATE}"  
             fi
           fi
