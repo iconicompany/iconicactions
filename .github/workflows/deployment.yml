@@ -142,7 +142,7 @@ jobs:
           DATABASE_USER: ${{ steps.database.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
           DATABASE_TEMPLATE: format('{0}{1}', env.WERF_NAME, 'template')
           DATABASE_HOST: ${{ steps.database.outputs.host }}
-          DUMPFILE: "sql/dump.sql"
+          DUMPFILE: "sql/data.sql"
       # - name: Login to Registry
       #   if: inputs.registry
       #   uses: docker/login-action@v3
