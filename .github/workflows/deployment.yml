@@ -106,7 +106,7 @@ jobs:
         run: |
           cp -rv $HOME/.step ${{ github.workspace }}/.step
       - name: Parse DATABASE_URL
-        id: database
+        id: parseurl
         run: |
           url=${{ inputs.DATABASE_URL }}
           protocol=$(echo "$url" | grep "://" | sed -e's,^\(.*://\).*,\1,g')
@@ -131,7 +131,8 @@ jobs:
           echo "port=$port" >> $GITHUB_OUTPUT
           echo "path=$path" >> $GITHUB_OUTPUT
       - name: Setup database
-        if: ${{ steps.database.outputs.HOST }}
+        id: database
+        if: ${{ steps.parseurl.outputs.HOST }}
         run: |
           if ! psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DATABASE_USER';" | grep -q 1; then
             psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -c "create user \"${DATABASE_USER}\" with CREATEDB;"  
@@ -144,12 +145,13 @@ jobs:
               psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_NAME}" -c "REASSIGN OWNED BY current_user TO \"${DATABASE_USER}\";"
             fi
           fi
+          echo "DATABASE_URL=$DATABASE_PROTOCOL$DATABASE_USER@DATABASE_HOST/$DATABASE_NAME" >> $GITHUB_OUTPUT
         env:
           CONNECT_USER: ${{ steps.bootstrap.outputs.CERTIFICATE_CN }}
-          DATABASE_USER: ${{ steps.database.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
-          DATABASE_NAME: ${{ steps.database.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
-          #DATABASE_TEMPLATE: ${{ format('{0}{1}', env.WERF_NAME, 'template') }}
-          DATABASE_HOST: ${{ steps.database.outputs.host }}
+          DATABASE_PROTOCOL: ${{ steps.parseurl.outputs.protocol }}
+          DATABASE_USER: ${{ steps.parseurl.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
+          DATABASE_NAME: ${{ steps.parseurl.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
+          DATABASE_HOST: ${{ steps.parseurl.outputs.host }}
           DUMPFILE: "sql/data.sql"
       # - name: Login to Registry
       #   if: inputs.registry
@@ -199,7 +201,8 @@ jobs:
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
-          WERF_SET_ENV: env.DOMAIN=${{ env.DOMAIN }}
+          WERF_SET_DOMAIN: env.DOMAIN=${{ env.DOMAIN }}
+          WERF_SET_DATABASE_URL: env.DATABASE_URL=${{ steps.database.outputs.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
