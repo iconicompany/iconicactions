@@ -145,7 +145,7 @@ jobs:
               psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_NAME}" -c "REASSIGN OWNED BY current_user TO \"${DATABASE_USER}\";"
             fi
           fi
-          echo "DATABASE_URL=$DATABASE_PROTOCOL$DATABASE_USER@DATABASE_HOST/$DATABASE_NAME" >> $GITHUB_OUTPUT
+          echo "DATABASE_URL=$DATABASE_PROTOCOL$DATABASE_USER@$DATABASE_HOST/$DATABASE_NAME" >> $GITHUB_OUTPUT
         env:
           CONNECT_USER: ${{ steps.bootstrap.outputs.CERTIFICATE_CN }}
           DATABASE_PROTOCOL: ${{ steps.parseurl.outputs.protocol }}
