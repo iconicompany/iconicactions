@@ -133,14 +133,15 @@ jobs:
       - name: Setup database
         if: ${{ steps.database.outputs.HOST }}
         run: |
-          echo "create user \"${DATABASE_USER}\" with CREATEDB; " | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres  
-          psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres -lqt | cut -d \| -f 1 | grep -qw "$DATABASE_TEMPLATE"
-          CREATE_TEMPLATE=$?
-          if [[ -f "$DUMPFILE" && $CREATE_TEMPLATE ]]; then
-            echo "create database \"${DATABASE_TEMPLATE}\"; GRANT ALL PRIVILEGES ON DATABASE \"${DATABASE_TEMPLATE}\" to \"${DATABASE_USER}\";" | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" postgres  
-            cat "$DUMPFILE"  | psql -U "${{ steps.bootstrap.outputs.CERTIFICATE_CN }}" -h "$DATABASE_HOST" "${DATABASE_TEMPLATE}"  
+          echo "create user \"${DATABASE_USER}\" with CREATEDB;" | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres  
+          if [[ -f "$DUMPFILE" ]]; then
+            if psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DATABASE_TEMPLATE';" | grep -q 0; then
+              echo "create database \"${DATABASE_TEMPLATE}\"; GRANT ALL PRIVILEGES ON DATABASE \"${DATABASE_TEMPLATE}\" to \"${DATABASE_USER}\";" | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" postgres  
+              cat "$DUMPFILE"  | psql -U "$CONNECT_USER" -h "$DATABASE_HOST" "${DATABASE_TEMPLATE}"  
+            fi
           fi
         env:
+          CONNECT_USER: ${{ steps.bootstrap.outputs.CERTIFICATE_CN }}
           DATABASE_USER: ${{ steps.database.outputs.user ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
           #DATABASE_NAME: ${{ steps.database.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
           DATABASE_TEMPLATE: ${{ format('{0}{1}', env.WERF_NAME, 'template') }}
