@@ -153,25 +153,6 @@ jobs:
           DATABASE_NAME: ${{ steps.parseurl.outputs.path ||  format('{0}{1}', env.WERF_NAME, env.WERF_ENV)  }}
           DATABASE_HOST: ${{ steps.parseurl.outputs.host }}
           DUMPFILE: "sql/data.sql"
-      # - name: Login to Registry
-      #   if: inputs.registry
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ${{ inputs.registry }}
-      #     username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
-      #     password: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
-      # - name: Werf converge
-      #   uses: werf/actions/converge@v1.2
-      #   if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
-      #   with:
-      #     kube-config-base64-data: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
-      #     env: ${{ env.WERF_ENV }}
-      # - name: Werf dismiss
-      #   uses: werf/actions/dismiss@v1.2
-      #   if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
-      #   with:
-      #     kube-config-base64-data: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
-      #     env: ${{ env.WERF_ENV }}
       - name: Check werf installation
         id: check_werf
         run: |
