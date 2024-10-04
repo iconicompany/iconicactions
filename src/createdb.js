@@ -14,7 +14,7 @@ async function createDB() {
   try {
     const exists = await prisma.$queryRaw`SELECT datname FROM pg_catalog.pg_database WHERE datname = ${createDbName}`;
     if (exists.length === 0) {
-      await prisma.$executeRawUnsafe(`CREATE DATABASE "${createDbName}"`);
+      await prisma.$executeRawUnsafe(`CREATE DATABASE "${createDbName} TEMPLATE iconicactionstemplate"`);
     }
   } catch (e) {
     await prisma.$disconnect()
