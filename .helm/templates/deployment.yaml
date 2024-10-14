@@ -34,10 +34,12 @@ spec:
           value: {{ $.Values.werf.name }}
         - name: DATABASE_URL
           value: "{{ $.Values.env.DATABASE_URL }}?sslmode=require&sslcert=/var/run/autocert.step.sm/root.crt&sslidentity=/var/run/autocert.step.sm/site.p12"
-        {{- range $name, $value := .Values.env }}
-        - name: {{ $name }}
-          value: {{ $value | quote }}
-        {{- end }}
+        - name: DOMAIN
+          value: {{ $.Values.env.DOMAIN }}
+        #{{- range $name, $value := .Values.env }}
+        #- name: {{ $name }}
+        #  value: {{ $value | quote }}
+        #{{- end }}
         volumeMounts:
         - name: {{ $.Values.werf.name }}
           mountPath: /var/apps/{{ $.Values.werf.name }}
