@@ -11,6 +11,5 @@ jobs:
     with:
       DOCKER_BUILDKIT: true
       WERF_ENV: testing
-      WERF_NAMESPACE: cloudauto-{1}
       DOMAIN: ${{ github.repository_owner }}.icncd.ru
       DATABASE_URL: postgres://postgresql01.kube01.icncd.ru
