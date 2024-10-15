@@ -15,7 +15,7 @@ on:
       DOMAIN:
         description: Hosting domain, e.g. {{ github.repository_owner }}.icncd.ru
         type: string
-        default: ${{ github.repository_owner }}.icncd.ru
+        default: \{0\}.${{ github.repository_owner }}.icncd.ru
       # SETENV:
       #   description: Some env variable, e.g. env.DOMAIN=example.com
       #   type: string
@@ -170,7 +170,7 @@ jobs:
         with:
           key: WERF_NAMESPACE
       - run: echo WERF_NAMESPACE=${WERF_NAMESPACE_SLUG_URL} >> $GITHUB_ENV
-      - run: echo DOMAIN=${{ env.WERF_ENV != 'production' && format('{0}.', env.WERF_NAMESPACE) || '' }}${{ inputs.DOMAIN }} >> $GITHUB_ENV
+      - run: echo DOMAIN=${{ format(inputs.DOMAIN, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
