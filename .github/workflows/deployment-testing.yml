@@ -1,7 +1,7 @@
 name: Testing Deployment
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "master"]
   pull_request:
     types: [labeled, unlabeled, synchronize, closed, reopened]
 jobs:
