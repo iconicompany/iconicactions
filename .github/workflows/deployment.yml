@@ -6,16 +6,16 @@ on:
         description: Custom container registry, e.g. registry.gitlab.com/owner/repo. Will use ghcr.io/owner/repo/repo by default
         type: string
       WERF_ENV:
-        description: Werf env (production, staging, testing, etc)
+        description: Werf env (production, staging, testing, etc). Default 'production' for tags, branch name for branches
         type: string
       WERF_NAMESPACE:
-        description: Werf namespace. Default value ${WERF_NAME}-${WERF_ENV}. Example value is branch/tag name "github.head_ref || github.ref_name"
+        description: Werf namespace, where {0} is repository, {1} is branch or 'production' for tag
         type: string
         default: '{0}-{1}'
       DOMAIN:
-        description: Hosting domain, e.g. {{ github.repository_owner }}.icncd.ru
+        description: Hosting domain, where {0} is WERF_NAMESPACE
         type: string
-        default: ${{ github.repository_owner }}.icncd.ru
+        default: '{0}.${{ github.repository_owner }}.icncd.ru'
       # SETENV:
       #   description: Some env variable, e.g. env.DOMAIN=example.com
       #   type: string
@@ -170,7 +170,7 @@ jobs:
         with:
           key: WERF_NAMESPACE
       - run: echo WERF_NAMESPACE=${WERF_NAMESPACE_SLUG_URL} >> $GITHUB_ENV
-      - run: echo DOMAIN=${{ env.WERF_ENV != 'production' && format('{0}.', env.WERF_NAMESPACE) || '' }}${{ inputs.DOMAIN }} >> $GITHUB_ENV
+      - run: echo DOMAIN=${{ format(inputs.DOMAIN, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
