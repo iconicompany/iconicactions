@@ -11,6 +11,7 @@ on:
       WERF_NAMESPACE:
         description: Werf namespace. Default value ${WERF_NAME}-${WERF_ENV}. Example value is branch/tag name "github.head_ref || github.ref_name"
         type: string
+        default: '{0}-{1}'
       DOMAIN:
         description: Hosting domain, e.g. {{ github.repository_owner }}.icncd.ru
         type: string
@@ -71,7 +72,7 @@ env:
   DOMAIN: ${{ inputs.DOMAIN }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
   WERF_NAME: ${{ github.event.repository.name }}
-  WERF_NAMESPACE: ${{ inputs.WERF_NAMESPACE || format('{0}-{1}', github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
+  WERF_NAMESPACE:  ${{ format(inputs.WERF_NAMESPACE, github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
   WERF_KUBE_CONTEXT: ${{ inputs.KUBE_CONTEXT  }}
   # WERF_SET_ENV: ${{ inputs.setenv }}
   WERF_REPO: ${{ inputs.registry }}
