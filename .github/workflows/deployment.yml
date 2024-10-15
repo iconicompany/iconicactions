@@ -15,7 +15,7 @@ on:
       DOMAIN:
         description: Hosting domain, e.g. {{ github.repository_owner }}.icncd.ru
         type: string
-        default: '\{0\}.${{ github.repository_owner }}.icncd.ru'
+        default: '{0}.${{ github.repository_owner }}.icncd.ru'
       # SETENV:
       #   description: Some env variable, e.g. env.DOMAIN=example.com
       #   type: string
