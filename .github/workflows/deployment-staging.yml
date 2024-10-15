@@ -8,4 +8,5 @@ jobs:
     secrets: inherit
     with:
       WERF_ENV: staging
+      WERF_NAMESPACE: cloudauto-{1}
       DOMAIN: staging.iconicompany.ru
