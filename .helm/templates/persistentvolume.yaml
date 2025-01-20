@@ -10,7 +10,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs
   nfs:
-    path: /srv/kube
+    path: /srv/kube/iconicactions-production
     server: node01
 ---
 apiVersion: v1
@@ -25,5 +25,5 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: nfs
   nfs:
-    path: /srv/kube
+    path: /srv/kube/iconicactions-testing
     server: node01
