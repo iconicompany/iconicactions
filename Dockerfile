@@ -42,7 +42,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 #RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-USER 1000
+USER node
 EXPOSE 3000
 
 # берется dev mode node_modules, из-за prisma
