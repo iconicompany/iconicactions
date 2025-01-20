@@ -2,6 +2,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: iconicactions-production
+annotations:
+  "helm.sh/resource-policy": keep
 spec:
   capacity:
     storage: 10Gi
@@ -17,6 +19,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: iconicactions-testing
+annotations:
+  "helm.sh/resource-policy": keep
 spec:
   capacity:
     storage: 10Gi
