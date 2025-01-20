@@ -68,3 +68,41 @@ spec:
   resources:
     requests:
       storage: 10Gi
+{{ if eq .Release.Namespace "iconicactions-production" }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: iconicactions-production
+annotations:
+  "helm.sh/resource-policy": keep
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  nfs:
+    path: /srv/kube/iconicactions-production
+    server: node01
+{{end}}
+{{ if eq .Release.Namespace "iconicactions-main" }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: iconicactions-testing
+annotations:
+  "helm.sh/resource-policy": keep
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  nfs:
+    path: /srv/kube/iconicactions-testing
+    server: node01
+{{end}}
