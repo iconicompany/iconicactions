@@ -1,7 +1,9 @@
+{{ if eq .Release.Namespace "iconicactions-production" }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: iconicactions-production
+  namespace: ""
 annotations:
   "helm.sh/resource-policy": keep
 spec:
@@ -14,11 +16,14 @@ spec:
   nfs:
     path: /srv/kube/iconicactions-production
     server: node01
+{{end}}
 ---
+{{ if eq .Release.Namespace "iconicactions-main" }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: iconicactions-testing
+  namespace: ""
 annotations:
   "helm.sh/resource-policy": keep
 spec:
@@ -31,3 +36,4 @@ spec:
   nfs:
     path: /srv/kube/iconicactions-testing
     server: node01
+{{end}}
