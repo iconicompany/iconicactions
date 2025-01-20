@@ -53,6 +53,7 @@ COPY prisma prisma
 
 COPY package.json ./
 COPY src src
+# For NextJS
 #COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 #COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 #COPY --from=builder --chown=nextjs:nodejs /app/next.config.mjs ./
