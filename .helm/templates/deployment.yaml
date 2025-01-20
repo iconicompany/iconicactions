@@ -64,6 +64,7 @@ spec:
   accessModes:
     - ReadWriteMany
   volumeName: {{ $.Values.werf.name }}-{{ $.Values.werf.env }}
+  storageClassName: nfs
   resources:
     requests:
       storage: 10Gi
