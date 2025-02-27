@@ -6,7 +6,6 @@ dotenvExpand.expand(dotenv.config({ path: [`.env.${process.env.NODE_ENV}.local`,
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
-
 const port = process.env.HTTP_PORT || 3000;
 
 const handler = createRouter()
