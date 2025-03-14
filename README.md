@@ -1,5 +1,4 @@
 # iconicactions
-
 ## One line installations script
 
 Run this command in project dir:
