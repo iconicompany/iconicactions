@@ -16,6 +16,10 @@ on:
         description: Hosting domain, where {0} is WERF_NAMESPACE
         type: string
         default: '{0}.${{ github.repository_owner }}.icncd.ru'
+      DOMAIN2:
+        description: Hosting domain2, where {0} is WERF_NAMESPACE
+        type: string
+        default: '{0}.${{ github.repository_owner }}.icncd.dev'
       # SETENV:
       #   description: Some env variable, e.g. env.DOMAIN=example.com
       #   type: string
@@ -70,6 +74,7 @@ concurrency:
 
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
+  DOMAIN2: ${{ inputs.DOMAIN2 }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
   WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE:  ${{ format(inputs.WERF_NAMESPACE, github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
@@ -171,6 +176,7 @@ jobs:
           key: WERF_NAMESPACE
       - run: echo WERF_NAMESPACE=${WERF_NAMESPACE_SLUG_URL} >> $GITHUB_ENV
       - run: echo DOMAIN=${{ format(inputs.DOMAIN, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
+      - run: echo DOMAIN2=${{ format(inputs.DOMAIN2, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
@@ -184,6 +190,7 @@ jobs:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
           WERF_SET_DOMAIN: env.DOMAIN=${{ env.DOMAIN }}
+          WERF_SET_DOMAIN2: env.DOMAIN2=${{ env.DOMAIN2 }}
           WERF_SET_DATABASE_URL: env.DATABASE_URL=${{ steps.database.outputs.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Werf dismiss
@@ -192,5 +199,6 @@ jobs:
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
-          WERF_SET_ENV: env.DOMAIN=${{ env.DOMAIN }}
+          WERF_SET_DOMAIN: env.DOMAIN=${{ env.DOMAIN }}
+          WERF_SET_DOMAIN2: env.DOMAIN2=${{ env.DOMAIN2 }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
