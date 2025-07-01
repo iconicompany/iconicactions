@@ -1,3 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Values.werf.name }}-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,10 +47,10 @@ spec:
           value: "{{ $.Values.env.DATABASE_URL }}?sslmode=require&sslcert=/var/run/autocert.step.sm/root.crt&sslidentity=/var/run/autocert.step.sm/site.p12"
         - name: DOMAIN
           value: {{ $.Values.env.DOMAIN }}
-        #{{- range $name, $value := .Values.env }}
-        #- name: {{ $name }}
-        #  value: {{ $value | quote }}
-        #{{- end }}
+        # {{- range $name, $value := .Values.env }}
+        # - name: {{ $name }}
+        #   value: {{ $value | quote }}
+        # {{- end }}
         volumeMounts:
         - name: {{ $.Values.werf.name }}
           mountPath: /var/apps/{{ $.Values.werf.name }}
@@ -49,20 +60,9 @@ spec:
           subPath: ".env"
           mountPath: "/app/.env"
       volumes:
-        - name: secret-volume
-        secret:
-          secretName: {{ $.Values.werf.name }}-secret
       - name: {{ $.Values.werf.name }}
         persistentVolumeClaim:
           claimName: {{ $.Values.werf.name }}-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ $.Values.werf.name }}-pvc
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 10Gi
+      - name: secret-volume
+        secret:
+          secretName: {{ $.Values.werf.name }}-secret
