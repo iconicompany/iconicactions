@@ -22,7 +22,11 @@
 
 ## Настроить ключ шифрования для секретов
 
+Получит у админа файл .werf_secret_key, добавить его в .gitignore и положить в корень репы.
+Чтобы прописать секрет в github actions выполнить
 ```
-cat $HOME/.werf/global_secret_key | gh secret set WERF_SECRET_KEY
+cat .werf_secret_key | gh secret set WERF_SECRET_KEY
 ```
+
+Для редактирования секретов: `werf helm secret file edit .helm/secret/env-testing`
 
