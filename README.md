@@ -8,7 +8,7 @@
 
 ## Логин в ghcr.io
 
-Получить токен htуtps://github.com/settings/tokens с доступом к пакетам (`read:packages`):
+Получить токен https://github.com/settings/tokens с доступом к пакетам (`read:packages`):
 
 `echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin`
 
