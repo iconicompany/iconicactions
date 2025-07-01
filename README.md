@@ -5,6 +5,10 @@
 Выполнить команду (установит в /usr/local/bin)
 `curl -Lo- https://raw.githubusercontent.com/iconicompany/osboxes/refs/heads/master/ubuntu/apps/werf.sh | bash`
 
+## Логин в ghcr.io
+
+Получить токен htуtps://github.com/settings/tokens с доступом к пакетам (`read:packages`)
+`echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin`
 
 ## Настройка репозитория
 
