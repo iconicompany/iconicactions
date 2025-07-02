@@ -9,7 +9,8 @@ permissions:
 jobs:
   call-deployment:
     uses: ./.github/workflows/deployment.yml
-    secrets: inherit
     with:
       WERF_ENV: production
       DOMAIN: iconicompany.ru
+    secrets:
+      WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
