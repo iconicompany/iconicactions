@@ -18,7 +18,7 @@
 
 `curl -Lo - https://github.com/iconicompany/iconicactions/raw/main/install.sh | bash -`
 
-Входная точка сборки .github/workflows/deployment-${ENV}.yaml. В нем заменить uses: **iconicompany**/iconicactions на текущую организацию (в организации должен быть fork iconicactions)
+Входная точка сборки .github/workflows/deployment-${ENV}.yaml. 
 
 ## Настроить ключ шифрования для секретов
 
