@@ -186,7 +186,6 @@ jobs:
           . $(werf ci-env github --as-file)
           werf cr login -u ${{ secrets.REGISTRY_USERNAME || github.actor }} -p ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} ${{ inputs.registry || 'ghcr.io' }}
           werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f - 
-          werf converge --add-custom-tag ${{ env.ADD_TAG }} 
           if [ -n "${ADD_TAG_LATEST}" ]; then
               werf converge --add-custom-tag ${{ env.ADD_TAG }} --add-custom-tag ${{ env.ADD_TAG_LATEST }}
           else
