@@ -75,6 +75,7 @@ concurrency:
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
   DOMAIN2: ${{ inputs.DOMAIN2 }}
+  ADD_TAG:  ${{ github.head_ref || github.ref_name }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
   WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE:  ${{ format(inputs.WERF_NAMESPACE, github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
@@ -178,18 +179,13 @@ jobs:
       - run: echo DOMAIN=${{ format(inputs.DOMAIN, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       - run: echo DOMAIN2=${{ format(inputs.DOMAIN2, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: name/app
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         run: |
           . $(werf ci-env github --as-file)
           werf cr login -u ${{ secrets.REGISTRY_USERNAME || github.actor }} -p ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} ${{ inputs.registry || 'ghcr.io' }}
           werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f - 
-          werf converge 
+          werf converge --add-custom-tag ${{ env.ADD_TAG }} 
           kubectl label namespace --overwrite ${{ env.WERF_NAMESPACE }} autocert.step.sm=enabled
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
