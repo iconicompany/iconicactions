@@ -76,7 +76,6 @@ env:
   DOMAIN: ${{ inputs.DOMAIN }}
   DOMAIN2: ${{ inputs.DOMAIN2 }}
   WERF_ADD_CUSTOM_TAG_BRANCH: ${{ github.head_ref || github.ref_name }}
-  WERF_ADD_CUSTOM_TAG_LATEST: ${{ startsWith(github.ref, 'refs/tags/v') && 'latest' || '' }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
   WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE:  ${{ format(inputs.WERF_NAMESPACE, github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
@@ -184,6 +183,9 @@ jobs:
         run: |
           TAG=$(echo "$WERF_ADD_CUSTOM_TAG_BRANCH" | sed -e 's/[^a-zA-Z0-9.-]/_/g' | sed -e 's/^[._-]//' -e 's/[._-]$//' | cut -c 1-128)
           echo "WERF_ADD_CUSTOM_TAG_BRANCH=$TAG" >> $GITHUB_ENV
+      - name: Set LATEST tag for releases
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo "WERF_ADD_CUSTOM_TAG_LATEST=latest" >> $GITHUB_ENV
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         run: |
