@@ -188,15 +188,20 @@ jobs:
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Sanitize and set custom tags
         run: |
+          IMAGE_COUNT=$(grep -c '^image:' werf.yaml || true)
+          TAG_PREFIX=""
+          if [ "$IMAGE_COUNT" -gt 1 ]; then
+            TAG_PREFIX="%image%-"
+          fi
           # Sanitize branch tag
           TAG=$(echo "${{ inputs.WERF_ADD_CUSTOM_TAG_BRANCH }}" | sed -e 's/[^a-zA-Z0-9.-]/-/g' | sed -e 's/^[._-]//' -e 's/[._-]$//' | cut -c 1-128)
-          echo "WERF_ADD_CUSTOM_TAG_BRANCH=$TAG" >> $GITHUB_ENV
+          echo "WERF_ADD_CUSTOM_TAG_BRANCH=${TAG_PREFIX}$TAG" >> $GITHUB_ENV
 
           # Conditionally set and sanitize latest tag
           LATEST_TAG_INPUT="${{ inputs.WERF_ADD_CUSTOM_TAG_LATEST }}"
           if [ -n "$LATEST_TAG_INPUT" ]; then
             TAG=$(echo "$LATEST_TAG_INPUT" | sed -e 's/[^a-zA-Z0-9.-]/-/g' | sed -e 's/^[._-]//' -e 's/[._-]$//' | cut -c 1-128)
-            echo "WERF_ADD_CUSTOM_TAG_LATEST=$TAG" >> $GITHUB_ENV
+            echo "WERF_ADD_CUSTOM_TAG_LATEST=${TAG_PREFIX}$TAG" >> $GITHUB_ENV
           fi
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
