@@ -75,7 +75,7 @@ concurrency:
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
   DOMAIN2: ${{ inputs.DOMAIN2 }}
-  ADD_TAG:  ${{ github.head_ref || github.ref_name }}
+  ADD_TAG:  ${{ replace(github.head_ref || github.ref_name, '/', '-') }}
   ADD_TAG_LATEST:  ${{ startsWith(github.ref, 'refs/tags/v') && 'latest' || '' }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
   WERF_NAME: ${{ github.event.repository.name }}
