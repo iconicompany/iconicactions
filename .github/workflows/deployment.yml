@@ -58,6 +58,14 @@ on:
       DATABASE_URL:
         description: Database DATABASE_HOST for testing 
         type: string
+      WERF_ADD_CUSTOM_TAG_BRANCH:
+        description: "Branch/feature tag for werf. Defaults to branch name."
+        type: string
+        default: ${{ github.head_ref || github.ref_name }}
+      WERF_ADD_CUSTOM_TAG_LATEST:
+        description: "Latest tag for werf, usually 'latest' for releases. Set to empty to disable."
+        type: string
+        default: ${{ startsWith(github.ref, 'refs/tags/v') && 'latest' || '' }}
     secrets:
       REGISTRY_USERNAME:
         description: Container registry login. If not set, github.actor is used
@@ -75,7 +83,6 @@ concurrency:
 env:
   DOMAIN: ${{ inputs.DOMAIN }}
   DOMAIN2: ${{ inputs.DOMAIN2 }}
-  WERF_ADD_CUSTOM_TAG_BRANCH: ${{ github.head_ref || github.ref_name }}
   WERF_ENV: ${{ inputs.WERF_ENV || startsWith(github.ref, 'refs/tags/v') && 'production' || 'testing' }}
   WERF_NAME: ${{ github.event.repository.name }}
   WERF_NAMESPACE:  ${{ format(inputs.WERF_NAMESPACE, github.event.repository.name, startsWith(github.ref, 'refs/tags/v') && 'production' || ( github.head_ref || github.ref_name ) ) }}
@@ -179,13 +186,18 @@ jobs:
       - run: echo DOMAIN=${{ format(inputs.DOMAIN, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       - run: echo DOMAIN2=${{ format(inputs.DOMAIN2, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
-      - name: Sanitize tag for Docker
+      - name: Sanitize and set custom tags
         run: |
-          TAG=$(echo "$WERF_ADD_CUSTOM_TAG_BRANCH" | sed -e 's/[^a-zA-Z0-9.-]/_/g' | sed -e 's/^[._-]//' -e 's/[._-]$//' | cut -c 1-128)
+          # Sanitize branch tag
+          TAG=$(echo "${{ inputs.WERF_ADD_CUSTOM_TAG_BRANCH }}" | sed -e 's/[^a-zA-Z0-9.-]/_/g' | sed -e 's/^[._-]//' -e 's/[._-]$//' | cut -c 1-128)
           echo "WERF_ADD_CUSTOM_TAG_BRANCH=$TAG" >> $GITHUB_ENV
-      - name: Set LATEST tag for releases
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: echo "WERF_ADD_CUSTOM_TAG_LATEST=latest" >> $GITHUB_ENV
+
+          # Conditionally set and sanitize latest tag
+          LATEST_TAG_INPUT="${{ inputs.WERF_ADD_CUSTOM_TAG_LATEST }}"
+          if [ -n "$LATEST_TAG_INPUT" ]; then
+            TAG=$(echo "$LATEST_TAG_INPUT" | sed -e 's/[^a-zA-Z0-9.-]/_/g' | sed -e 's/^[._-]//' -e 's/[._-]$//' | cut -c 1-128)
+            echo "WERF_ADD_CUSTOM_TAG_LATEST=$TAG" >> $GITHUB_ENV
+          fi
       - name: Werf converge
         if: ${{ github.event_name == 'push' || env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         run: |
