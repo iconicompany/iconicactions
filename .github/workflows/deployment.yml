@@ -23,6 +23,10 @@ on:
       # SETENV:
       #   description: Some env variable, e.g. env.DOMAIN=example.com
       #   type: string
+      BUILD_ONLY:
+        description: 'If true, only builds and publishes images (werf build && werf publish).'
+        type: boolean
+        default: false
       REVIEW_LABEL:
         description: Pull request label to converge (review by default)
         type: string
@@ -209,8 +213,15 @@ jobs:
           . $(werf ci-env github --as-file)
           werf cr login -u ${{ secrets.REGISTRY_USERNAME || github.actor }} -p ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} ${{ inputs.registry || 'ghcr.io' }}
           werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f - 
-          werf converge
-          kubectl label namespace --overwrite ${{ env.WERF_NAMESPACE }} autocert.step.sm=enabled
+          if [[ "${{ inputs.BUILD_ONLY }}" == "true" ]]; then
+            echo "Running in BUILD_ONLY mode: build and publish"
+            werf build && werf publish
+          else
+            echo "Running in CONVERGE mode: build and deploy"
+            werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f -
+            werf converge
+            kubectl label namespace --overwrite ${{ env.WERF_NAMESPACE }} autocert.step.sm=enabled
+          fi
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
