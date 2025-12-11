@@ -62,7 +62,7 @@ on:
       DATABASE_URL:
         description: Database DATABASE_HOST for testing 
         type: string
-    DISMISS_WITH_NAMESPACE:
+      DISMISS_WITH_NAMESPACE:
         description: "If true, werf dismiss deletes the namespace (adds --with-namespace flag)."
         type: boolean
         default: true
