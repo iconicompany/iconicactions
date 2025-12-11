@@ -62,6 +62,10 @@ on:
       DATABASE_URL:
         description: Database DATABASE_HOST for testing 
         type: string
+    DISMISS_WITH_NAMESPACE:
+        description: "If true, werf dismiss deletes the namespace (adds --with-namespace flag)."
+        type: boolean
+        default: true
       WERF_ADD_CUSTOM_TAG_BRANCH:
         description: "Branch/feature tag for werf. Defaults to branch name."
         type: string
@@ -227,11 +231,13 @@ jobs:
           WERF_ENV: ${{ env.WERF_ENV }}
           WERF_SET_DOMAIN: env.DOMAIN=${{ env.DOMAIN }}
           WERF_SET_DOMAIN2: env.DOMAIN2=${{ env.DOMAIN2 }}
+          WERF_SET_BASE_URL: env.BASE_URL=https://${{ env.DOMAIN }}
+          WERF_SET_BASE_URL2: env.BASE_URL2=https://${{ env.DOMAIN2 }}
           WERF_SET_DATABASE_URL: env.DATABASE_URL=${{ steps.database.outputs.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
-        run: . $(werf ci-env github --as-file); werf dismiss --with-namespace
+        run: . $(werf ci-env github --as-file); werf dismiss ${{ inputs.DISMISS_WITH_NAMESPACE == true && '--with-namespace' || '' }}
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
