@@ -16,7 +16,7 @@ CA_LOCATION_PG=${PGCERTPATH}/root.crt
 
 #curl -LO https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb
 if ! command -v step > /dev/null; then
-    curl -Lo step-cli_amd64.deb https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.26.0/step-cli_0.26.0_amd64.deb
+    curl -Lo step-cli_amd64.deb https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.29.0/step-cli_0.29.0-1_amd64.deb
     sudo dpkg -i step-cli_amd64.deb
     rm -f step-cli_amd64.deb
 fi
