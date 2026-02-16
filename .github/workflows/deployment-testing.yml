@@ -8,6 +8,7 @@ permissions:
   id-token: write # This is required for requesting the JWT
   contents: read # This is required for actions/checkout
   packages: write # This is required for package publish
+  pull-requests: write # This is required for posting comments
 jobs:
   call-deployment:
     uses: ./.github/workflows/deployment.yml
