@@ -235,6 +235,20 @@ jobs:
           WERF_SET_BASE_URL2: env.BASE_URL2=https://${{ env.DOMAIN2 }}
           WERF_SET_DATABASE_URL: env.DATABASE_URL=${{ steps.database.outputs.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Link deployment to PR
+        if: ${{ github.event_name == 'pull_request' && env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          message: |
+            ## 🚀 Deployment Successful!
+
+            | Environment | Link |
+            | :--- | :--- |
+            | **Public** | [https://${{ env.DOMAIN }}](https://${{ env.DOMAIN }}) |
+            | **Additional** | [https://${{ env.DOMAIN2 }}](https://${{ env.DOMAIN2 }}) |
+
+            *WERF_NAMESPACE: `${{ env.WERF_NAMESPACE }}`*
+          comment_tag: deployment-link
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         run: . $(werf ci-env github --as-file); werf dismiss ${{ inputs.DISMISS_WITH_NAMESPACE == true && '--with-namespace' || '' }}
