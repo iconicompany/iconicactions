@@ -248,7 +248,7 @@ jobs:
             | **Additional** | [https://${{ env.DOMAIN2 }}](https://${{ env.DOMAIN2 }}) |
 
             *WERF_NAMESPACE: `${{ env.WERF_NAMESPACE }}`*
-          comment_tag: deployment-link
+          comment-tag: deployment-link
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
         run: . $(werf ci-env github --as-file); werf dismiss ${{ inputs.DISMISS_WITH_NAMESPACE == true && '--with-namespace' || '' }}
