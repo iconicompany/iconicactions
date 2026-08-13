@@ -55,6 +55,13 @@ on:
         default: ubuntu-latest
       WERF_SECRET_KEY:
         description: Key for secret files/values. Required if secret files/values used in templates.
+      BUILD_TOKEN:
+        description: >-
+          Token for the build stage, exported as BUILD_TOKEN to werf. Optional and used only by
+          projects whose werf.yaml declares `secrets: - env: BUILD_TOKEN`; nothing changes for the
+          rest. Needed when a Dockerfile has to reach a PRIVATE resource while building — e.g.
+          ilanding bakes blog content from the private iconicompany/icontent. Build args and plain
+          env are not an option for that: both stay in the image.
         type: string
       COPY_STEP_CERT:
           description: Copy .step with x509 certificates to workspace
@@ -236,6 +243,7 @@ jobs:
           WERF_SET_BASE_URL2: env.BASE_URL2=https://${{ env.DOMAIN2 }}
           WERF_SET_DATABASE_URL: env.DATABASE_URL=${{ steps.database.outputs.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUILD_TOKEN: ${{ secrets.BUILD_TOKEN }}
       - name: Link deployment to PR
         if: ${{ github.event_name == 'pull_request' && env.IS_LABELED_PR == 'true' && github.event.action != 'closed' }}
         uses: thollander/actions-comment-pull-request@v3
