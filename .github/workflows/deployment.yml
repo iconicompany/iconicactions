@@ -55,13 +55,6 @@ on:
         default: ubuntu-latest
       WERF_SECRET_KEY:
         description: Key for secret files/values. Required if secret files/values used in templates.
-      BUILD_TOKEN:
-        description: >-
-          Token for the build stage, exported as BUILD_TOKEN to werf. Optional and used only by
-          projects whose werf.yaml declares `secrets: - env: BUILD_TOKEN`; nothing changes for the
-          rest. Needed when a Dockerfile has to reach a PRIVATE resource while building — e.g.
-          ilanding bakes blog content from the private iconicompany/icontent. Build args and plain
-          env are not an option for that: both stay in the image.
         type: string
       COPY_STEP_CERT:
           description: Copy .step with x509 certificates to workspace
@@ -82,6 +75,13 @@ on:
         type: string
         default: ${{ startsWith(github.ref, 'refs/tags/v') && 'latest' || '' }}
     secrets:
+      BUILD_TOKEN:
+        description: >-
+          Token for the BUILD stage, exported to werf as BUILD_TOKEN. Optional: it only matters for
+          projects whose werf.yaml declares `secrets: - env: BUILD_TOKEN`, and nothing changes for
+          everyone else. Needed when a Dockerfile must reach a PRIVATE resource while building —
+          ilanding bakes blog content from the private iconicompany/icontent. A build arg or plain
+          env would not do: both stay in the image layers.
       REGISTRY_USERNAME:
         description: Container registry login. If not set, github.actor is used
       KUBE_CONFIG:
