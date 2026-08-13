@@ -24,7 +24,7 @@ on:
       #   description: Some env variable, e.g. env.DOMAIN=example.com
       #   type: string
       BUILD_ONLY:
-        description: 'If true, only builds and publishes images (werf build && werf publish).'
+        description: 'If true, only builds and publishes images (werf build).'
         type: boolean
         default: false
       REVIEW_LABEL:
@@ -193,7 +193,15 @@ jobs:
           fi
       - name: Install werf
         if: steps.check_werf.outputs.installed == 'false'
-        uses: werf/actions/install@v1.2
+        # werf 2. Переход с 1.2 понадобился ради build-секретов (`secrets:` в werf.yaml): в 1.2
+        # такого поля нет вовсе, и Dockerfile, которому нужен доступ к приватному ресурсу на
+        # сборке, приходилось бы кормить build-arg — а тот остаётся в слоях образа.
+        #
+        # Проверено перед переключением: адрес реестра по-прежнему выдаёт `werf ci-env github`,
+        # отдельный `--repo` не нужен (так и в документации werf 2 для GitHub Actions), а все
+        # потребители уже ссылаются на образ через `.Values.werf.image.<имя>` — снятой в v2
+        # функции `werf_image` нет ни у одного.
+        uses: werf/actions/install@v2
       # see also https://github.com/marketplace/actions/github-slug
       - uses: rlespinasse/slugify-value@v1.x
         with:
@@ -227,7 +235,10 @@ jobs:
           werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f - 
           if [[ "${{ inputs.BUILD_ONLY }}" == "true" ]]; then
             echo "Running in BUILD_ONLY mode: build and publish"
-            werf build && werf publish
+            # В v2 отдельной `werf publish` не осталось: `werf build` сам публикует в реестр,
+            # который дал `ci-env`. Раньше пара команд читалась как «собрать и выложить», а теперь
+            # вторая просто не существует.
+            werf build
           else
             echo "Running in CONVERGE mode: build and deploy"
             werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f -
