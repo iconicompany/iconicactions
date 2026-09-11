@@ -27,3 +27,22 @@
 
 Для редактирования секретов: `werf helm secret file edit .helm/secret/env-testing`
 
+
+## Локальная сборка и выкатка
+
+`scripts/werf.sh` собирает и выкатывает проект с машины — тем же порядком, что делает
+`deployment.yml` в Actions: вход в ghcr, namespace с меткой `autocert.step.sm`, `werf converge`,
+метка namespace. Настройки берёт из `.github/workflows/deployment-<окружение>.{yml,yaml,txt}`
+самого проекта, чтобы локальная выкатка и CI не разъезжались.
+
+```bash
+ln -s ~/work/iconicactions/scripts/werf.sh ~/bin/werf.sh   # один раз
+
+werf.sh production --dry-run   # план целиком: настройки, версия, все команды. Ничего не делает
+werf.sh production             # версия → тег → сборка → выкатка → проверка, что приложение отвечает
+werf.sh production minor
+werf.sh testing                # стенд текущей ветки: сборка и выкатка, без тега
+```
+
+Окружение — обязательный первый аргумент, умолчания у него нет. Версия, тег и требование «с main и
+вровень с origin/main» — только у `production`. Токен ghcr берётся из `GITHUB_TOKEN` или `gh auth token`.
