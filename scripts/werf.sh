@@ -6,11 +6,12 @@
 # CI не разъедутся, и возврат к Actions не потребует переносить настройки обратно. Умолчания входов
 # берутся из переиспользуемого deployment.yml, лежащего рядом с этим скриптом.
 #
-# Usage: werf.sh <окружение> [patch|minor|major] [--dry-run] [--deploy-only]
+# Usage: werf.sh <окружение> [patch|minor|major] [--dry-run] [--deploy-only] [--local-registry]
 #          <окружение>    production | testing | development — обязательно, без умолчания
 #          patch|…        шаг версии, только для production (по умолчанию patch)
 #          --dry-run      напечатать настройки, версию и все команды; ничего не выполнять
 #          --deploy-only  повторить сборку и выкатку последнего тега, не выпуская новый
+#          --local-registry  собирать в localhost:5000 и слать образ на ноду по ssh, минуя ghcr
 set -euo pipefail
 
 die() {
@@ -19,17 +20,19 @@ die() {
 }
 
 usage() {
-  echo "Usage: werf.sh <production|testing|development> [patch|minor|major] [--dry-run] [--deploy-only]" >&2
+  echo "Usage: werf.sh <production|testing|development> [patch|minor|major] [--dry-run] [--deploy-only] [--local-registry]" >&2
 }
 
 ENVIRONMENT=""
 BUMP="patch"
 DRY_RUN=""
 DEPLOY_ONLY=""
+LOCAL_REGISTRY="${WERF_LOCAL_REGISTRY:-}"
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN="1" ;;
     --deploy-only) DEPLOY_ONLY="1" ;;
+    --local-registry) LOCAL_REGISTRY="1" ;;
     -h | --help)
       usage
       exit 0
@@ -273,7 +276,14 @@ WERF_ENV="$ENVIRONMENT"
 
 # Адрес образов CI получает от `werf ci-env github`; локально его надо назвать. Схема та же:
 # ghcr.io/<владелец>/<репозиторий>/<проект werf>.
-WERF_REPO="${WERF_REPO:-${REGISTRY:-ghcr.io/$OWNER/$REPO/$WERF_PROJECT}}"
+# --local-registry уводит и стадии, и образ в реестр на этой машине: в ghcr уезжает 2.5 ГБ по
+# каналу, который медленнее локального в разы, и это единственное долгое место всей выкатки.
+LOCAL_REGISTRY_HOST="${LOCAL_REGISTRY_HOST:-localhost:5000}"
+if [ -n "$LOCAL_REGISTRY" ]; then
+  WERF_REPO="${WERF_REPO:-$LOCAL_REGISTRY_HOST/$OWNER/$REPO/$WERF_PROJECT}"
+else
+  WERF_REPO="${WERF_REPO:-${REGISTRY:-ghcr.io/$OWNER/$REPO/$WERF_PROJECT}}"
+fi
 WERF_REPO=$(echo "$WERF_REPO" | tr '[:upper:]' '[:lower:]')
 REGISTRY_HOST="${WERF_REPO%%/*}"
 
@@ -372,14 +382,55 @@ else
   fail_check "кластер $CLUSTER_URL не отвечает на контексте $KUBE_CONTEXT: $CLUSTER_ANSWER"
 fi
 
+# Реестр на этой машине: ни токена, ни входа не нужно — нужен сам реестр, одна нода в кластере и
+# ssh до неё, потому что образ приезжает туда не пулом, а импортом в containerd.
+DEPLOY_NODE="${DEPLOY_NODE:-}"
+if [ -n "$LOCAL_REGISTRY" ]; then
+  if curl -s -o /dev/null --max-time 5 "http://$LOCAL_REGISTRY_HOST/v2/"; then
+    pass_check "реестр $LOCAL_REGISTRY_HOST отвечает"
+  else
+    fail_check "реестр $LOCAL_REGISTRY_HOST не отвечает — поднимите его: docker run -d --name registry --restart unless-stopped -p $LOCAL_REGISTRY_HOST:5000 -v registry:/var/lib/registry registry:2"
+  fi
+
+  # Одна нода — условие, а не удобство: импорт кладёт образ в containerd ОДНОЙ машины, и на втором
+  # узле под не найдёт образа, а тянуть его неоткуда — localhost:5000 внутри кластера пуст.
+  NODE_NAMES=$(werf kubectl --context "$KUBE_CONTEXT" get nodes -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)
+  NODE_COUNT=$(echo "$NODE_NAMES" | wc -w)
+  if [ "$NODE_COUNT" = "1" ]; then
+    [ -n "$DEPLOY_NODE" ] || DEPLOY_NODE="${NODE_NAMES%%.*}"
+    pass_check "в кластере одна нода: $NODE_NAMES"
+  elif [ -n "$DEPLOY_NODE" ]; then
+    pass_check "нод $NODE_COUNT, образ пойдёт на $DEPLOY_NODE (задано DEPLOY_NODE)"
+  else
+    fail_check "нод в кластере $NODE_COUNT — импорт в containerd одной ноды не годится; задайте DEPLOY_NODE, если под приземляется только на неё"
+  fi
+
+  if [ -n "$DEPLOY_NODE" ] && ssh -o BatchMode=yes -o ConnectTimeout=10 "$DEPLOY_NODE" 'sudo -n ctr -n k8s.io images ls -q >/dev/null' 2>/dev/null; then
+    pass_check "ssh $DEPLOY_NODE и sudo ctr работают"
+  elif [ -n "$DEPLOY_NODE" ]; then
+    fail_check "на $DEPLOY_NODE не отработало 'sudo -n ctr -n k8s.io images ls' — нужен ssh по ключу и sudo без пароля"
+  fi
+
+  NODE_FREE=$(ssh -o BatchMode=yes -o ConnectTimeout=10 "$DEPLOY_NODE" "df -BG --output=avail / | tail -1 | tr -dc '0-9'" 2>/dev/null || echo "")
+  if [ -n "$NODE_FREE" ] && [ "$NODE_FREE" -lt 8 ]; then
+    fail_check "на $DEPLOY_NODE свободно ${NODE_FREE} ГБ — образу не хватит; уберите старое: sudo ctr -n k8s.io images prune --all"
+  elif [ -n "$NODE_FREE" ]; then
+    pass_check "на $DEPLOY_NODE свободно ${NODE_FREE} ГБ"
+  fi
+fi
+
 # Токен реестра. Образы собираются локально и кладутся в ghcr — без входа выкатка упадёт на пуше.
 REGISTRY_USER="${REGISTRY_USERNAME:-$OWNER}"
 REGISTRY_TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
-if [ -z "$REGISTRY_TOKEN" ] && command -v gh >/dev/null; then
+if [ -n "$LOCAL_REGISTRY" ]; then
+  REGISTRY_TOKEN=""
+elif [ -z "$REGISTRY_TOKEN" ] && command -v gh >/dev/null; then
   REGISTRY_TOKEN=$(gh auth token 2>/dev/null || true)
   REGISTRY_USER="${REGISTRY_USERNAME:-$(gh api user --jq .login 2>/dev/null || echo "$OWNER")}"
 fi
-if [ -n "$REGISTRY_TOKEN" ]; then
+if [ -n "$LOCAL_REGISTRY" ]; then
+  : # реестр на этой машине без учётных данных — проверять нечего
+elif [ -n "$REGISTRY_TOKEN" ]; then
   # Наличия токена МАЛО. `werf cr login` принимает любой токен и отвечает «Successful login», а
   # отказ по правам приезжает только на первом обращении к репозиторию — из середины converge,
   # уже ПОСЛЕ созданного тега и релиза. Поэтому право читать теги проверяется здесь, запросом.
@@ -476,6 +527,7 @@ echo "  DOMAIN:          $DOMAIN"
 echo "  DOMAIN2:         $DOMAIN2"
 echo "  DATABASE_URL:    ${DATABASE_URL:-—}"
 echo "  WERF_REPO:       $WERF_REPO"
+[ -z "$LOCAL_REGISTRY" ] || echo "  образ на ноду:   ssh $DEPLOY_NODE → ctr -n k8s.io images import (минуя ghcr)"
 echo "  кластер:         $CLUSTER_URL (контекст $KUBE_CONTEXT)"
 echo "  теги образов:    $WERF_ADD_CUSTOM_TAG_BRANCH${WERF_ADD_CUSTOM_TAG_LATEST:+, $WERF_ADD_CUSTOM_TAG_LATEST}"
 echo "  проверка ответа: $HEALTH_URL"
@@ -533,11 +585,16 @@ export WERF_ADD_CUSTOM_TAG_BRANCH
 [ -n "$WERF_ADD_CUSTOM_TAG_LATEST" ] && export WERF_ADD_CUSTOM_TAG_LATEST
 [ "$DOCKER_BUILDKIT" = "true" ] && export DOCKER_BUILDKIT=1
 
-echo
-echo "+ werf cr login -u $REGISTRY_USER -p <токен> $REGISTRY_HOST"
-if [ -z "$DRY_RUN" ]; then
-  werf cr login -u "$REGISTRY_USER" -p "$REGISTRY_TOKEN" "$REGISTRY_HOST" ||
-    die "вход в реестр $REGISTRY_HOST не прошёл — проверьте права токена (нужен write:packages)"
+if [ -n "$LOCAL_REGISTRY" ]; then
+  # Реестр без TLS и без учётных данных: werf иначе пойдёт в него по https и получит отказ.
+  export WERF_INSECURE_REGISTRY=1 WERF_SKIP_TLS_VERIFY_REGISTRY=1
+else
+  echo
+  echo "+ werf cr login -u $REGISTRY_USER -p <токен> $REGISTRY_HOST"
+  if [ -z "$DRY_RUN" ]; then
+    werf cr login -u "$REGISTRY_USER" -p "$REGISTRY_TOKEN" "$REGISTRY_HOST" ||
+      die "вход в реестр $REGISTRY_HOST не прошёл — проверьте права токена (нужен write:packages)"
+  fi
 fi
 
 NAMESPACE_COMMAND="werf kubectl --context $KUBE_CONTEXT create namespace $WERF_NAMESPACE --dry-run=client -o yaml"
@@ -551,7 +608,49 @@ if [ "$BUILD_ONLY" = "true" ]; then
   exit 0
 fi
 
-run werf converge
+if [ -n "$LOCAL_REGISTRY" ]; then
+  # Сборка и выкатка разводятся: между ними образ надо донести до ноды. Имена образов берём из
+  # отчёта werf, а не собираем по шаблону — тег считается от содержимого, угадать его нельзя.
+  BUILD_REPORT=$(mktemp -t werf-build-report-XXXXXX.json)
+  trap 'rm -f "$BUILD_REPORT"' EXIT
+  run werf build --save-build-report --build-report-path "$BUILD_REPORT"
+
+  if [ -n "$DRY_RUN" ]; then
+    IMAGE_REFS="<образ-из-отчёта-сборки>"
+  else
+    IMAGE_REFS=$(python3 -c '
+import json, sys
+
+report = json.load(open(sys.argv[1]))
+for image in (report.get("Images") or {}).values():
+    name = image.get("DockerImageName")
+    if name:
+        print(name)
+' "$BUILD_REPORT")
+    [ -n "$IMAGE_REFS" ] || die "werf build не назвал ни одного образа в отчёте $BUILD_REPORT"
+  fi
+
+  for IMAGE_REF in $IMAGE_REFS; do
+    run docker pull "$IMAGE_REF"
+    # zstd, а не голый поток: слои уже сжаты, но метаданные и несжатые слои дают заметную разницу,
+    # а процессорного времени это стоит меньше, чем лишние секунды канала.
+    run_shell "docker save '$IMAGE_REF' | zstd -q -T0 -3 | ssh -o BatchMode=yes '$DEPLOY_NODE' 'zstd -dq | sudo ctr -n k8s.io images import -'"
+    # Закрепление обязательно. kubelet чистит неиспользуемые образы при заполнении диска (порог 85 %),
+    # и между импортом и стартом пода образ успевает исчезнуть — а взять его неоткуда: localhost:5000
+    # внутри кластера пуст, и отказ будет ImagePullBackOff без единой подсказки на причину.
+    #
+    # Закрепление ПРЕДЫДУЩИХ при этом снимается, иначе выкатки копят по 2 ГБ несносимого: закреплённый
+    # образ kubelet не тронет никогда, и диск ноды кончится молча.
+    UNPIN="sudo ctr -n k8s.io images ls -q | grep -F '${IMAGE_REF%%:*}:' | grep -Fxv '$IMAGE_REF'"
+    UNPIN="$UNPIN | xargs -r -n1 -I{} sudo ctr -n k8s.io images label {} io.cri-containerd.pinned="
+    run_shell "ssh -o BatchMode=yes '$DEPLOY_NODE' \"$UNPIN\" >/dev/null 2>&1 || true"
+    run_shell "ssh -o BatchMode=yes '$DEPLOY_NODE' \"sudo ctr -n k8s.io images label '$IMAGE_REF' io.cri-containerd.pinned=pinned\" >/dev/null"
+  done
+
+  run werf converge --skip-build
+else
+  run werf converge
+fi
 run werf kubectl --context "$KUBE_CONTEXT" label namespace --overwrite "$WERF_NAMESPACE" autocert.step.sm=enabled
 
 # --- приложение отвечает ------------------------------------------------------------------------
