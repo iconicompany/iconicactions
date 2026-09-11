@@ -380,7 +380,19 @@ if [ -z "$REGISTRY_TOKEN" ] && command -v gh >/dev/null; then
   REGISTRY_USER="${REGISTRY_USERNAME:-$(gh api user --jq .login 2>/dev/null || echo "$OWNER")}"
 fi
 if [ -n "$REGISTRY_TOKEN" ]; then
-  pass_check "токен для $REGISTRY_HOST есть (пользователь $REGISTRY_USER)"
+  # Наличия токена МАЛО. `werf cr login` принимает любой токен и отвечает «Successful login», а
+  # отказ по правам приезжает только на первом обращении к репозиторию — из середины converge,
+  # уже ПОСЛЕ созданного тега и релиза. Поэтому право читать теги проверяется здесь, запросом.
+  REGISTRY_PATH="${WERF_REPO#*/}"
+  REGISTRY_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+    -H "Authorization: Bearer $(printf '%s' "$REGISTRY_TOKEN" | base64 -w0)" \
+    "https://$REGISTRY_HOST/v2/$REGISTRY_PATH/tags/list?n=1" 2>/dev/null || echo 000)
+  case "$REGISTRY_CODE" in
+    200|404) pass_check "токен для $REGISTRY_HOST читает $WERF_REPO (пользователь $REGISTRY_USER)" ;;
+    403|401) fail_check "токен для $REGISTRY_HOST есть, но прав на $WERF_REPO нет (HTTP $REGISTRY_CODE) — нужны scope write:packages и read:packages: gh auth refresh -h github.com -s write:packages,read:packages" ;;
+    000) pass_check "токен для $REGISTRY_HOST есть; права не проверены — $REGISTRY_HOST не ответил" ;;
+    *) fail_check "$REGISTRY_HOST ответил HTTP $REGISTRY_CODE на список тегов $WERF_REPO" ;;
+  esac
 else
   fail_check "нет токена для $REGISTRY_HOST — задайте GITHUB_TOKEN или авторизуйтесь: gh auth login"
 fi
