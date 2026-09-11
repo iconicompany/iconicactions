@@ -6,4 +6,6 @@ grep -Rl iconicactions $WORK_DIR/iconicactions-main|xargs sed -i "s/iconicaction
 mkdir -p .github/workflows/
 sed -i 's^./.github/workflows/deployment.yml^iconicompany/iconicactions/.github/workflows/deployment.yml@main^' $WORK_DIR/iconicactions-main/.github/workflows/deployment-*.yml
 cp $WORK_DIR/iconicactions-main/.github/workflows/deployment-*.yml .github/workflows/
-cp -r $WORK_DIR/iconicactions-main/{.helm,werf.yaml,werf.sh,build.sh,runit.sh,Dockerfile} .
+# werf.sh больше не раздаётся проектам: команда выкатки одна на платформу —
+# iconicactions/scripts/werf.sh (симлинк ~/bin/werf.sh), а настройки она берёт из deployment-<окружение>.yml.
+cp -r $WORK_DIR/iconicactions-main/{.helm,werf.yaml,build.sh,runit.sh,Dockerfile} .
