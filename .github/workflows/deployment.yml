@@ -59,6 +59,15 @@ on:
       COPY_STEP_CERT:
           description: Copy .step with x509 certificates to workspace
           type: boolean
+      AUTOCERT_ENABLED:
+        description: >-
+          Выдавать ли поду клиентский сертификат step-ca (autocert.step.sm). Только при `true`
+          workflow сам заводит namespace с меткой `autocert.step.sm=enabled` — метку читает
+          инжектор, и без неё сертификат не появится. При `false` namespace НЕ создаётся вовсе:
+          его заводит werf, и лишнее создание отбирало бы у него владение. Уйдёт целиком, когда
+          все продукты перейдут на вход по токену OAuth.
+        type: boolean
+        default: false
       DATABASE_URL:
         description: Database DATABASE_HOST for testing 
         type: string
@@ -232,7 +241,12 @@ jobs:
         run: |
           . $(werf ci-env github --as-file)
           werf cr login -u ${{ secrets.REGISTRY_USERNAME || github.actor }} -p ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} ${{ inputs.registry || 'ghcr.io' }}
-          werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f - 
+          # Namespace заводится ЗДЕСЬ только ради метки autocert: инжектор читает её при создании
+          # пода, то есть метка обязана существовать ДО converge. Без autocert namespace создаёт
+          # werf сам — и остаётся его владельцем.
+          if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" ]]; then
+            werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f -
+          fi
           if [[ "${{ inputs.BUILD_ONLY }}" == "true" ]]; then
             echo "Running in BUILD_ONLY mode: build and publish"
             # В v2 отдельной `werf publish` не осталось: `werf build` сам публикует в реестр,
@@ -241,9 +255,16 @@ jobs:
             werf build
           else
             echo "Running in CONVERGE mode: build and deploy"
-            werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f -
+            if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" ]]; then
+              werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f -
+            fi
             werf converge
-            kubectl label namespace --overwrite ${{ env.WERF_NAMESPACE }} autocert.step.sm=enabled
+            # Метка ставится ПОВТОРНО после converge: werf приводит namespace к своему описанию и
+            # снимает чужие метки, а без неё под при следующем перезапуске останется без
+            # сертификата — и это не упадёт, а тихо сломает вход в базу.
+            if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" ]]; then
+              kubectl label namespace --overwrite ${{ env.WERF_NAMESPACE }} autocert.step.sm=enabled
+            fi
           fi
         env:
           WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
