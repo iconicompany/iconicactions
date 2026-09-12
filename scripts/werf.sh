@@ -6,12 +6,16 @@
 # CI не разъедутся, и возврат к Actions не потребует переносить настройки обратно. Умолчания входов
 # берутся из переиспользуемого deployment.yml, лежащего рядом с этим скриптом.
 #
-# Usage: werf.sh <окружение> [patch|minor|major] [--dry-run] [--deploy-only] [--local-registry]
+# Usage: werf.sh <окружение> [patch|minor|major] [--dry-run] [--deploy-only] [--ghcr]
 #          <окружение>    production | testing | development — обязательно, без умолчания
 #          patch|…        шаг версии, только для production (по умолчанию patch)
 #          --dry-run      напечатать настройки, версию и все команды; ничего не выполнять
 #          --deploy-only  повторить сборку и выкатку последнего тега, не выпуская новый
-#          --local-registry  собирать в localhost:5000 и слать образ на ноду по ssh, минуя ghcr
+#          --ghcr         класть образы в ghcr, как делал CI (по умолчанию — локальный реестр)
+#
+# ПО УМОЛЧАНИЮ образы идут в реестр на этой машине, а на ноду уезжают по ssh прямо в containerd.
+# Пуш в ghcr — единственное долгое место выкатки: замер 11.09.2026 — образ 1.9 ГБ не уложился туда
+# за 20 минут, тогда как локальный путь дал 6.3 мин сборки и 2.1 мин переноса.
 set -euo pipefail
 
 die() {
@@ -20,19 +24,22 @@ die() {
 }
 
 usage() {
-  echo "Usage: werf.sh <production|testing|development> [patch|minor|major] [--dry-run] [--deploy-only] [--local-registry]" >&2
+  echo "Usage: werf.sh <production|testing|development> [patch|minor|major] [--dry-run] [--deploy-only] [--ghcr]" >&2
 }
 
 ENVIRONMENT=""
 BUMP="patch"
 DRY_RUN=""
 DEPLOY_ONLY=""
-LOCAL_REGISTRY="${WERF_LOCAL_REGISTRY:-}"
+# Умолчание — локальный реестр; выключается флагом --ghcr или WERF_LOCAL_REGISTRY=0.
+LOCAL_REGISTRY="${WERF_LOCAL_REGISTRY:-1}"
+[ "$LOCAL_REGISTRY" = "0" ] && LOCAL_REGISTRY=""
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN="1" ;;
     --deploy-only) DEPLOY_ONLY="1" ;;
     --local-registry) LOCAL_REGISTRY="1" ;;
+    --ghcr | --no-local-registry) LOCAL_REGISTRY="" ;;
     -h | --help)
       usage
       exit 0
@@ -119,14 +126,13 @@ OWNER="${REPO_SLUG%%/*}"
 REPO="${REPO_SLUG##*/}"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-# Отключённый воркфлоу в этих репозиториях переименовывают в .txt (так уже сделано с testing), а
-# настройки в нём остаются те же. Поэтому перебираем расширения: иначе отключение Actions молча
-# лишало бы локальную выкатку настроек.
+# Файл воркфлоу остаётся воркфлоу, даже когда сборка в Actions выключена: выключают её снятием
+# триггера (`actions.sh off`), а не переименованием. Иначе настройки выкатки пришлось бы искать по
+# расширениям, и выключение Actions молча лишало бы их локальную выкатку.
 WORKFLOW=""
 for candidate in "${DEPLOY_WORKFLOW:-}" \
   ".github/workflows/deployment-$ENVIRONMENT.yml" \
-  ".github/workflows/deployment-$ENVIRONMENT.yaml" \
-  ".github/workflows/deployment-$ENVIRONMENT.txt"; do
+  ".github/workflows/deployment-$ENVIRONMENT.yaml"; do
   if [ -n "$candidate" ] && [ -f "$candidate" ]; then
     WORKFLOW="$candidate"
     break
