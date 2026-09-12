@@ -215,12 +215,13 @@ EOF
 fi
 
 # 3. Copy Helm templates, Werf & GitHub workflows from template source
+# Своего werf.sh проект больше не получает: выкатка одна на платформу — iconicactions/scripts/werf.sh
+# (симлинк ~/bin/werf.sh), настройки он читает из скопированных ниже deployment-<окружение>.yml.
 echo "🛠️ Configuring Werf, Helm charts & GitHub Actions..."
 
 if [ -d "$SCRIPT_DIR/.helm" ]; then
     cp -r "$SCRIPT_DIR/.helm" "$TARGET_DIR/"
     cp "$SCRIPT_DIR/werf.yaml" "$TARGET_DIR/"
-    cp "$SCRIPT_DIR/werf.sh" "$TARGET_DIR/"
     cp "$SCRIPT_DIR/build.sh" "$TARGET_DIR/"
     cp "$SCRIPT_DIR/runit.sh" "$TARGET_DIR/"
     mkdir -p "$TARGET_DIR/.github/workflows"
@@ -232,13 +233,128 @@ else
     unzip -q "$TMP_DIR/iconicactions.zip" -d "$TMP_DIR"
     cp -r "$TMP_DIR/iconicactions-main/.helm" "$TARGET_DIR/"
     cp "$TMP_DIR/iconicactions-main/werf.yaml" "$TARGET_DIR/"
-    cp "$TMP_DIR/iconicactions-main/werf.sh" "$TARGET_DIR/"
     cp "$TMP_DIR/iconicactions-main/build.sh" "$TARGET_DIR/"
     cp "$TMP_DIR/iconicactions-main/runit.sh" "$TARGET_DIR/"
     mkdir -p "$TARGET_DIR/.github/workflows"
     cp "$TMP_DIR/iconicactions-main/.github/workflows/deployment-"*.yml "$TARGET_DIR/.github/workflows/"
     rm -rf "$TMP_DIR"
 fi
+
+# Remove secrets directory and secret template (not needed for static site)
+rm -rf "$TARGET_DIR/.helm/secret"
+rm -f "$TARGET_DIR/.helm/templates/secret.yaml"
+
+# Create clean deployment.yaml for static site (no PVC, no secrets volume, no DB)
+cat << 'EOF' > "$TARGET_DIR/.helm/templates/deployment.yaml"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Values.werf.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $.Values.werf.name }}
+  template:
+    metadata:
+      annotations:
+        autocert.step.sm/name: {{ $.Values.werf.name }}{{ $.Values.werf.env }}
+      labels:
+        app: {{ $.Values.werf.name }}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: "kubernetes.io/arch"
+                  operator: In
+                  values: ["amd64"]
+      containers:
+      - name: app
+        image: {{ .Values.werf.image.app }}
+        ports:
+        - containerPort: 3000
+        env:
+        - name: WERF_ENV
+          value: {{ $.Values.werf.env }}
+        - name: WERF_NAME
+          value: {{ $.Values.werf.name }}
+        - name: DOMAIN
+          value: {{ $.Values.env.DOMAIN }}
+EOF
+
+# Create clean deployment-testing.yml workflow
+cat << 'EOF' > "$TARGET_DIR/.github/workflows/deployment-testing.yml"
+name: Testing Deployment
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    types: [labeled, unlabeled, synchronize, closed, reopened]
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+  packages: write # This is required for package publish
+  pull-requests: write # This is required for posting comments
+jobs:
+  call-deployment:
+    uses: iconicompany/iconicactions/.github/workflows/deployment.yml@main
+    with:
+      DOCKER_BUILDKIT: true
+      WERF_ENV: testing
+EOF
+
+# Create clean deployment-production.yml workflow
+cat << 'EOF' > "$TARGET_DIR/.github/workflows/deployment-production.yml"
+name: Production Deployment
+on:
+  push:
+    tags: ['v*','!v*-*']
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+  packages: write # This is required for package publish
+jobs:
+  call-deployment:
+    uses: iconicompany/iconicactions/.github/workflows/deployment.yml@main
+    with:
+      WERF_ENV: production
+      DOMAIN: iconicompany.ru
+EOF
+
+# Create clean ingress.yaml for static site (listening on / and /<project-name>)
+cat << 'EOF' > "$TARGET_DIR/.helm/templates/ingress.yaml"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Values.werf.name }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - secretName: {{ $.Values.env.DOMAIN }}
+      hosts:
+        - {{ $.Values.env.DOMAIN }}
+  rules:
+  - host: {{ $.Values.env.DOMAIN }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $.Values.werf.name }}
+            port:
+              number: 3000
+      - path: /{{ $.Values.werf.name }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $.Values.werf.name }}
+            port:
+              number: 3000
+EOF
 
 # 4. Create Nginx Dockerfile, nginx.conf and .dockerignore for static site
 echo "🐳 Creating Nginx Dockerfile & configuration..."
@@ -283,7 +399,6 @@ cat << 'EOF' > "$TARGET_DIR/.dockerignore"
 .github
 .helm
 werf.yaml
-werf.sh
 build.sh
 runit.sh
 .env*
@@ -293,11 +408,8 @@ EOF
 # 5. Customize placeholders for target project
 echo "✏️ Customizing configuration placeholders for project '$PROJECT_NAME'..."
 
-# Replace iconicactions with project name in Werf, scripts, workflows
-grep -Rl "iconicactions" "$TARGET_DIR/werf.yaml" "$TARGET_DIR/werf.sh" "$TARGET_DIR/build.sh" "$TARGET_DIR/runit.sh" "$TARGET_DIR/.github/workflows/" | xargs sed -i "s/iconicactions/$PROJECT_NAME/g"
-
-# Set workflow call to point to reusable workflow in iconicompany/iconicactions
-sed -i "s^\./\.github/workflows/deployment\.yml^iconicompany/iconicactions/.github/workflows/deployment.yml@main^g" "$TARGET_DIR/.github/workflows/deployment-"*.yml
+# Replace iconicactions with project name in Werf, scripts, and Helm templates
+sed -i "s/iconicactions/$PROJECT_NAME/g" "$TARGET_DIR/werf.yaml" "$TARGET_DIR/build.sh" "$TARGET_DIR/runit.sh" "$TARGET_DIR/.helm/templates/deployment.yaml"
 
 # 6. Initialize Git & push to GitHub
 echo "octocat: Initializing Git repository and pushing to GitHub ($FULL_REPO)..."
