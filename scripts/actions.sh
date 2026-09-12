@@ -134,7 +134,7 @@ if command == 'off':
     # Сохраняем ДОСЛОВНО, вместе с отступами: возврат обязан дать тот же файл, а не пересказ.
     saved = [begin] + ['# ' + l if l else '#' for l in body] + [end]
     note = [
-        '# ТРИГГЕРЫ СНЯТЫ: сборка и выкатка идут локально (release.sh / werf.sh).',
+        '# ТРИГГЕРЫ СНЯТЫ: сборка и выкатка идут локально (werf.sh).',
         '# Вернуть ровно то, что было: actions.sh on ' + os.path.basename(path),
     ]
     replacement = note + saved + ['on:', '  workflow_dispatch:']

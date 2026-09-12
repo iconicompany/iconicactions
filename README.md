@@ -30,23 +30,22 @@
 
 ## Локальная сборка и выкатка
 
-`scripts/release.sh` и `scripts/werf.sh` собирают и выкатывают проект с машины — тем же порядком,
+`scripts/werf.sh` собирает и выкатывает проект с машины — тем же порядком,
 что делает `deployment.yml` в Actions: вход в реестр, namespace с меткой `autocert.step.sm`,
 `werf converge`, метка namespace. Настройки берутся из
 `.github/workflows/deployment-<окружение>.{yml,yaml}` самого проекта, чтобы локальная выкатка и CI
-не разъезжались. В репозиториях продукта своих копий этих скриптов нет намеренно: размноженный по
-проектам скрипт релиза расходится в каждом по-своему.
+не разъезжались. В репозиториях продукта своих копий этих скриптов нет намеренно, и обёрток в
+`package.json` тоже: размноженная по проектам команда релиза расходится в каждом по-своему.
 
 ```bash
-ln -s ~/work/iconicactions/scripts/release.sh ~/bin/release.sh   # один раз
-ln -s ~/work/iconicactions/scripts/werf.sh    ~/bin/werf.sh
+ln -s ~/work/iconicactions/scripts/werf.sh    ~/bin/werf.sh      # один раз
 ln -s ~/work/iconicactions/scripts/actions.sh ~/bin/actions.sh
 
-release.sh --dry-run   # план целиком: настройки, версия, все команды. Ничего не делает
-release.sh             # версия → тег → сборка → выкатка → проверка, что приложение отвечает
-release.sh minor
-release.sh --ghcr      # образы в ghcr, как делал CI (по умолчанию — реестр на этой машине)
-werf.sh testing        # стенд текущей ветки: сборка и выкатка, без тега
+werf.sh production --dry-run   # план целиком: настройки, версия, все команды. Ничего не делает
+werf.sh production             # версия → тег → сборка → выкатка → проверка, что приложение отвечает
+werf.sh production minor
+werf.sh production --ghcr      # образы в ghcr, как делал CI (по умолчанию — реестр на этой машине)
+werf.sh testing                # стенд текущей ветки: сборка и выкатка, без тега
 ```
 
 **Образы по умолчанию идут в локальный реестр, а не в ghcr.** Пуш в ghcr — единственное долгое
