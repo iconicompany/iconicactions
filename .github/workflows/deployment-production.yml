@@ -10,6 +10,10 @@ jobs:
   call-deployment:
     uses: ./.github/workflows/deployment.yml
     with:
+      # LEGACY: приложение входит в БАЗУ КЛИЕНТСКИМ сертификатом autocert (site.*),
+      # поэтому поду он нужен. Раньше это давал дефолт iconicactions; теперь задаём явно,
+      # иначе werf.sh снимет метку autocert с namespace и вход в базу отвалится при рестарте.
+      AUTOCERT_ENABLED: true
       WERF_ENV: production
       DOMAIN: iconicompany.ru
     secrets:
