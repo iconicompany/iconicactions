@@ -16,6 +16,6 @@ jobs:
       #RUNS_ON: self-hosted
       DOCKER_BUILDKIT: true
       WERF_ENV: testing
-      DATABASE_URL: postgres://postgresql01.kube01.icncd.ru
+      DATABASE_URL: postgres://postgresql01.icncd.ru
     secrets:
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
