@@ -35,6 +35,20 @@ on:
         description: Cluser URL, default https://kube01.icncd.ru:6443
         type: string
         default: https://kube01.icncd.ru:6443
+      KUBE_AUTH:
+        description: >-
+          Вход в кластер: `x509` — сертификат step-ca учётки runner (на весь кластер), `broker` —
+          токен ZITADEL учётки deployer-<продукт> от ci-broker (только namespace'ы продукта).
+        type: string
+        default: x509
+      CI_BROKER_URL:
+        description: ci-broker, выдающий токен ZITADEL при KUBE_AUTH=broker
+        type: string
+        default: https://ci-broker.kube01.icncd.ru
+      CLUSTER_CA_DATA:
+        description: Корневой CA apiserver (iconicompany-ca) в base64 для KUBE_AUTH=broker, сертификат публичный
+        type: string
+        default: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNIVENDQWFTZ0F3SUJBZ0lVWXkvendCd002MlFHWU5IRmFqeUVkNzV5TmxZd0NnWUlLb1pJemowRUF3TXcKUGpFTE1Ba0dBMVVFQmhNQ2NuVXhGVEFUQmdOVkJBb01ER2xqYjI1cFkyOXRjR0Z1ZVRFWU1CWUdBMVVFQXd3UAphV052Ym1samIyMXdZVzU1TFdOaE1CNFhEVEkwTURJeE5qQXpOVEExTUZvWERUUTVNREl4TmpBek5UQTFNRm93ClBqRUxNQWtHQTFVRUJoTUNjblV4RlRBVEJnTlZCQW9NREdsamIyNXBZMjl0Y0dGdWVURVlNQllHQTFVRUF3d1AKYVdOdmJtbGpiMjF3WVc1NUxXTmhNSFl3RUFZSEtvWkl6ajBDQVFZRks0RUVBQ0lEWWdBRWhqR1hma0hpR0gzdQpUQkhhQi9vdEFVMFZxKzB3NDNza0YzNW5pcWRubm9KS0NJTHhURjdqWVJMUVg5M2k0SFRSNlg2bjRqZGFEMHdOCjUzUTdTMHhEWkhUWHhHZll4MG9zb21VWUhVWGZSdmdVM2lGMUxhOGVteFdMem56cEVjS0pvMk13WVRBZEJnTlYKSFE0RUZnUVVrc3pFa3J3NEEwcXp3aW5TelZ5dkg3SW9PYUV3SHdZRFZSMGpCQmd3Rm9BVWtzekVrcnc0QTBxegp3aW5TelZ5dkg3SW9PYUV3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFPQmdOVkhROEJBZjhFQkFNQ0FZWXdDZ1lJCktvWkl6ajBFQXdNRFp3QXdaQUl3ZldNOXdYY29kUUw2VzB1V3c4M0QzQmgwaUd0RGt2cmJLQ2QrMnkvSjFabGwKL0t2enZHaGhjcmlOUU0vck5GQjlBakJFWkRoMlNjRDAxMDcwY3hSQXhxYmJTTWFSdkpqYm1MVTJnWDRvemw4UQoyMzV0RmdsYmpXb3BPUWY0dTg1LzNFND0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
       STEP_CA_URL:
         description: Step CA URL, default https://ca.iconicompany.com:4443
         type: string
@@ -133,7 +147,8 @@ jobs:
     steps:
       - name: Step CA bootstrap
         id: bootstrap
-        if: ${{ ! inputs.KUBE_CONTEXT }}
+        # При broker сертификат нужен только миграциям в PG (COPY_STEP_CERT), не входу в кластер.
+        if: ${{ ! inputs.KUBE_CONTEXT && (inputs.KUBE_AUTH != 'broker' || inputs.COPY_STEP_CERT) }}
         run: |
           curl -Ls https://github.com/iconicompany/iconicactions/raw/main/scripts/step-github.sh | bash -
         env:
@@ -208,6 +223,53 @@ jobs:
           key: WERF_NAMESPACE
       - run: echo WERF_NAMESPACE=${WERF_NAMESPACE_SLUG_URL} >> $GITHUB_ENV
       - run: echo DOMAIN=${{ format(inputs.DOMAIN, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
+      - name: ci-broker token
+        id: broker
+        # После slugify: брокер сверяет итоговый WERF_NAMESPACE с deploy.namespace продукта и сам его заводит.
+        if: ${{ ! inputs.KUBE_CONTEXT && inputs.KUBE_AUTH == 'broker' }}
+        run: |
+          if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" ]]; then
+            echo "::error::AUTOCERT_ENABLED несовместим с KUBE_AUTH=broker: метку autocert ставить некому, под останется без сертификата"
+            exit 1
+          fi
+          GH=$(curl -sf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$CI_BROKER_URL" | jq -r .value)
+          [[ -n "$GH" && "$GH" != null ]] || { echo "::error::нет токена GitHub OIDC (permissions: id-token: write)"; exit 1; }
+          # Без -f: отказ приходит JSON {"error": ...} с 401/403, и причину надо показать.
+          CODE=$(curl -s -o broker.json -w '%{http_code}' -X POST "$CI_BROKER_URL/token" -H "Authorization: Bearer $GH" -H 'content-type: application/json' -d "{\"namespace\":\"$WERF_NAMESPACE\"}") || CODE=000
+          if [[ "$CODE" != 200 ]]; then
+            echo "::error::ci-broker отказал ($CODE): $(jq -r '.error // .' broker.json 2>/dev/null || cat broker.json)"
+            rm -f broker.json; exit 1
+          fi
+          TOKEN=$(jq -r .token broker.json); rm -f broker.json
+          echo "::add-mask::$TOKEN"
+          mkdir -p "$HOME/.kube"
+          cat > "$HOME/.kube/config" <<EOF
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - name: default
+            cluster:
+              server: ${CLUSTER_URL}
+              certificate-authority-data: ${CLUSTER_CA_DATA}
+          users:
+          - name: default
+            user:
+              token: ${TOKEN}
+          contexts:
+          - name: default
+            context:
+              cluster: default
+              user: default
+              namespace: ${WERF_NAMESPACE}
+          current-context: default
+          EOF
+          CONFIG=$(base64 -w0 "$HOME/.kube/config")
+          echo "::add-mask::$CONFIG"
+          echo "KUBE_CONFIG=$CONFIG" >> $GITHUB_OUTPUT
+        env:
+          CI_BROKER_URL: ${{ inputs.CI_BROKER_URL }}
+          CLUSTER_URL: ${{ inputs.CLUSTER_URL }}
+          CLUSTER_CA_DATA: ${{ inputs.CLUSTER_CA_DATA }}
       - run: echo DOMAIN2=${{ format(inputs.DOMAIN2, env.WERF_NAMESPACE) }} >> $GITHUB_ENV
       # - run: echo WERF_NAMESPACE=$(werf slugify -f kubernetes-namespace ${WERF_NAMESPACE}) >> $GITHUB_ENV
       - name: Sanitize and set custom tags
@@ -235,7 +297,7 @@ jobs:
           # Namespace заводится ЗДЕСЬ только ради метки autocert: инжектор читает её при создании
           # пода, то есть метка обязана существовать ДО converge. Без autocert namespace создаёт
           # werf сам — и остаётся его владельцем.
-          if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" ]]; then
+          if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" && "${{ inputs.KUBE_AUTH }}" != "broker" ]]; then
             werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f -
           fi
           if [[ "${{ inputs.BUILD_ONLY }}" == "true" ]]; then
@@ -246,19 +308,19 @@ jobs:
             werf build
           else
             echo "Running in CONVERGE mode: build and deploy"
-            if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" ]]; then
+            if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" && "${{ inputs.KUBE_AUTH }}" != "broker" ]]; then
               werf kubectl create namespace ${{ env.WERF_NAMESPACE }} --dry-run=client -o yaml | sed  '/^metadata:/a\ \ labels: {"autocert.step.sm":"enabled"}' | werf kubectl apply -f -
             fi
             werf converge
             # Метка ставится ПОВТОРНО после converge: werf приводит namespace к своему описанию и
             # снимает чужие метки, а без неё под при следующем перезапуске останется без
             # сертификата — и это не упадёт, а тихо сломает вход в базу.
-            if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" ]]; then
+            if [[ "${{ inputs.AUTOCERT_ENABLED }}" == "true" && "${{ inputs.KUBE_AUTH }}" != "broker" ]]; then
               kubectl label namespace --overwrite ${{ env.WERF_NAMESPACE }} autocert.step.sm=enabled
             fi
           fi
         env:
-          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.broker.outputs.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
           WERF_SET_DOMAIN: env.DOMAIN=${{ env.DOMAIN }}
           WERF_SET_DOMAIN2: env.DOMAIN2=${{ env.DOMAIN2 }}
@@ -283,9 +345,9 @@ jobs:
           comment-tag: deployment-link
       - name: Werf dismiss
         if: ${{ github.event_name == 'pull_request' && ((github.event.action == 'closed' && env.IS_LABELED_PR == 'true') || (github.event.action == 'unlabeled' && env.IS_LABELED_PR == 'false')) }}
-        run: . $(werf ci-env github --as-file); werf dismiss ${{ inputs.DISMISS_WITH_NAMESPACE == true && '--with-namespace' || '' }}
+        run: . $(werf ci-env github --as-file); werf dismiss ${{ inputs.DISMISS_WITH_NAMESPACE == true && inputs.KUBE_AUTH != 'broker' && '--with-namespace' || '' }}
         env:
-          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
+          WERF_KUBECONFIG_BASE64: ${{ inputs.KUBE_CONTEXT && secrets.KUBE_CONFIG || steps.broker.outputs.KUBE_CONFIG || steps.bootstrap.outputs.KUBE_CONFIG }}
           WERF_ENV: ${{ env.WERF_ENV }}
           WERF_SET_DOMAIN: env.DOMAIN=${{ env.DOMAIN }}
           WERF_SET_DOMAIN2: env.DOMAIN2=${{ env.DOMAIN2 }}
